@@ -4,21 +4,22 @@
 
 const App = (() => {
 
-  // ── State ────────────────────────────────────────────────
   let state = {
     people: [],
     meals: { breakfast: [], lunch: [], dinner: [] },
-    cookingSteps: {},        // { mealName: { steps: [] } }
+    cookingSteps: {},
+    macroTable: {},
+    macroSummary: {},
     shoppingList: [],
     checked: {},
     mealServings: {},
-    activeSection: 'shopping', // shopping | recipes
-    activeTab: 'breakfast',    // breakfast | lunch | dinner | list
-    recipesTab: 'breakfast',   // breakfast | lunch | dinner
+    activeSection: 'shopping',
+    activeTab: 'breakfast',
+    recipesTab: 'breakfast',
     personFilter: 'All',
     recipePersonFilter: 'All',
-    activeMeal: null,          // meal name currently open in cook mode
-    activeTimer: null,         // { stepIdx, remaining, interval }
+    activeMeal: null,
+    activeTimer: null,
     loading: false,
     error: null,
     signedIn: false,
@@ -33,27 +34,14 @@ const App = (() => {
     document.getElementById('btn-refresh').addEventListener('click', loadData);
     document.getElementById('btn-refresh-r').addEventListener('click', loadData);
     document.getElementById('btn-uncheck').addEventListener('click', clearChecked);
-
-    document.querySelectorAll('.section-tab').forEach(t =>
-      t.addEventListener('click', () => switchSection(t.dataset.section)));
-    document.querySelectorAll('.nav-tab').forEach(t =>
-      t.addEventListener('click', () => switchTab(t.dataset.tab)));
-    document.querySelectorAll('.rec-tab').forEach(t =>
-      t.addEventListener('click', () => switchRecipesTab(t.dataset.tab)));
+    document.querySelectorAll('.section-tab').forEach(t => t.addEventListener('click', () => switchSection(t.dataset.section)));
+    document.querySelectorAll('.nav-tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+    document.querySelectorAll('.rec-tab').forEach(t => t.addEventListener('click', () => switchRecipesTab(t.dataset.tab)));
   }
 
   // ── Auth ─────────────────────────────────────────────────
-  function onSignedIn() {
-    state.signedIn = true;
-    showScreen('app');
-    loadData();
-  }
-
-  function onSignedOut() {
-    state.signedIn = false;
-    showScreen('login');
-  }
-
+  function onSignedIn() { state.signedIn = true; showScreen('app'); loadData(); }
+  function onSignedOut() { state.signedIn = false; showScreen('login'); }
   function showScreen(name) {
     document.getElementById('screen-login').style.display = name === 'login' ? 'flex' : 'none';
     document.getElementById('screen-app').style.display   = name === 'app'   ? 'flex' : 'none';
@@ -61,78 +49,74 @@ const App = (() => {
 
   // ── Data loading ─────────────────────────────────────────
   async function loadData() {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
-      const [people, breakfast, lunch, dinner, cookingSteps] = await Promise.all([
+      const [people, breakfast, lunch, dinner, cookingSteps, macroTable] = await Promise.all([
         Sheets.getPeople(),
         Sheets.getMeals(CONFIG.TABS.BREAKFAST),
         Sheets.getMeals(CONFIG.TABS.LUNCH),
         Sheets.getMeals(CONFIG.TABS.DINNER),
         Sheets.getCookingSteps(),
+        Sheets.getMacroTable(),
       ]);
       state.people       = people;
       state.meals        = { breakfast, lunch, dinner };
       state.cookingSteps = cookingSteps;
+      state.macroTable   = macroTable;
       state.checked      = {};
       state.mealServings = {};
       [...breakfast, ...lunch, ...dinner].forEach(m => { state.mealServings[m.name] = 1; });
       rebuildList();
+      rebuildMacros();
       renderAll();
     } catch (err) {
       setError('Could not load data from Google Sheets. ' + err.message);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   function rebuildList() {
     state.shoppingList = Sheets.buildShoppingList(state.people, state.meals, state.mealServings);
   }
 
-  // ── Section switching (Shopping / Recipes) ────────────────
+  function rebuildMacros() {
+    state.macroSummary = Sheets.buildMacroSummary(state.people, state.meals, state.mealServings, state.macroTable);
+  }
+
+  // ── Section switching ─────────────────────────────────────
   function switchSection(section) {
     state.activeSection = section;
     state.activeMeal = null;
     stopTimer();
-    document.querySelectorAll('.section-tab').forEach(t =>
-      t.classList.toggle('active', t.dataset.section === section));
+    document.querySelectorAll('.section-tab').forEach(t => t.classList.toggle('active', t.dataset.section === section));
     document.getElementById('shopping-section').style.display = section === 'shopping' ? 'flex' : 'none';
     document.getElementById('recipes-section').style.display  = section === 'recipes'  ? 'flex' : 'none';
     if (section === 'recipes') renderRecipesSection();
   }
 
-  // ── Tab switching (Shopping tabs) ─────────────────────────
   function switchTab(tab) {
     state.activeTab = tab;
-    document.querySelectorAll('.nav-tab').forEach(t =>
-      t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     renderShoppingMain();
     renderHeader();
   }
 
-  // ── Recipes tab switching ─────────────────────────────────
   function switchRecipesTab(tab) {
     state.recipesTab = tab;
     state.activeMeal = null;
     stopTimer();
-    document.querySelectorAll('.rec-tab').forEach(t =>
-      t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.rec-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
     renderRecipesMealList();
   }
 
-  // ── Person filters ────────────────────────────────────────
+  // ── Filters ───────────────────────────────────────────────
   function setPersonFilter(filter) {
     state.personFilter = filter;
-    document.querySelectorAll('#person-filter .filter-btn').forEach(b =>
-      b.classList.toggle('active', b.dataset.filter === filter));
+    document.querySelectorAll('#person-filter .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
     renderMealList();
   }
-
   function setRecipePersonFilter(filter) {
     state.recipePersonFilter = filter;
-    document.querySelectorAll('#recipe-person-filter .filter-btn').forEach(b =>
-      b.classList.toggle('active', b.dataset.filter === filter));
+    document.querySelectorAll('#recipe-person-filter .filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
     renderRecipesMealList();
   }
 
@@ -140,53 +124,37 @@ const App = (() => {
   function toggleMeal(name, mealType) {
     const meal = state.meals[mealType].find(m => m.name === name);
     if (meal) meal.include = !meal.include;
-    rebuildList();
+    rebuildList(); rebuildMacros();
     state.checked = {};
-    renderMealList();
-    renderBadges();
+    renderMealList(); renderBadges();
+    if (state.activeTab === 'macros') renderMacros();
   }
 
   function changeMealServings(name, mealType, delta) {
     state.mealServings[name] = Math.max(1, (state.mealServings[name] || 1) + delta);
-    rebuildList();
+    rebuildList(); rebuildMacros();
     state.checked = {};
     renderMealList();
+    if (state.activeTab === 'macros') renderMacros();
   }
 
   function toggleItem(key) {
     state.checked[key] = !state.checked[key];
     const el = document.querySelector(`[data-key="${CSS.escape(key)}"]`);
     if (el) el.classList.toggle('checked', !!state.checked[key]);
-    updateCatCounts();
-    renderProgress();
+    updateCatCounts(); renderProgress();
   }
 
-  function clearChecked() {
-    state.checked = {};
-    renderList();
-    renderProgress();
-  }
+  function clearChecked() { state.checked = {}; renderList(); renderProgress(); }
 
   // ── Cook mode ─────────────────────────────────────────────
-  function openMeal(mealName) {
-    state.activeMeal = mealName;
-    stopTimer();
-    renderCookMode();
-  }
-
-  function closeMeal() {
-    state.activeMeal = null;
-    stopTimer();
-    renderRecipesMealList();
-    document.getElementById('cook-mode').style.display = 'none';
-    document.getElementById('recipes-meal-list-wrap').style.display = 'block';
-  }
+  function openMeal(mealName) { state.activeMeal = mealName; stopTimer(); renderCookMode(); }
+  function closeMeal() { state.activeMeal = null; stopTimer(); renderRecipesMealList(); document.getElementById('cook-mode').style.display = 'none'; document.getElementById('recipes-meal-list-wrap').style.display = 'block'; }
 
   function startTimer(stepIdx, seconds) {
     stopTimer();
     state.activeTimer = { stepIdx, remaining: seconds };
     updateTimerDisplay(stepIdx, seconds);
-
     state.activeTimer.interval = setInterval(() => {
       state.activeTimer.remaining--;
       updateTimerDisplay(stepIdx, state.activeTimer.remaining);
@@ -194,49 +162,38 @@ const App = (() => {
         stopTimer();
         const btn = document.getElementById(`timer-btn-${stepIdx}`);
         if (btn) { btn.textContent = '✓ Done'; btn.classList.add('timer-done'); }
-        // Vibrate if supported
         if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
         playBeep();
       }
     }, 1000);
   }
 
-  function stopTimer() {
-    if (state.activeTimer?.interval) clearInterval(state.activeTimer.interval);
-    state.activeTimer = null;
-  }
+  function stopTimer() { if (state.activeTimer?.interval) clearInterval(state.activeTimer.interval); state.activeTimer = null; }
 
   function updateTimerDisplay(stepIdx, remaining) {
     const el = document.getElementById(`timer-display-${stepIdx}`);
-    if (el) {
-      const m = Math.floor(remaining / 60);
-      const s = remaining % 60;
-      el.textContent = `${m}:${String(s).padStart(2, '0')}`;
-    }
+    if (el) { const m = Math.floor(remaining / 60); const s = remaining % 60; el.textContent = `${m}:${String(s).padStart(2, '0')}`; }
   }
 
   // ── Rendering ─────────────────────────────────────────────
-  function renderAll() {
-    renderHeader();
-    renderShoppingMain();
-    renderBadges();
-    if (state.activeSection === 'recipes') renderRecipesSection();
-  }
+  function renderAll() { renderHeader(); renderShoppingMain(); renderBadges(); if (state.activeSection === 'recipes') renderRecipesSection(); }
 
   function renderHeader() {
     const tab = state.activeTab;
     const listEl  = document.getElementById('header-actions-list');
     const mealsEl = document.getElementById('header-actions-meals');
-    if (listEl)  listEl.style.display  = tab === 'list' ? 'flex' : 'none';
-    if (mealsEl) mealsEl.style.display = tab !== 'list' ? 'flex' : 'none';
+    if (listEl)  listEl.style.display  = tab === 'list'   ? 'flex' : 'none';
+    if (mealsEl) mealsEl.style.display = tab !== 'list' && tab !== 'macros' ? 'flex' : 'none';
   }
 
   function renderShoppingMain() {
     const tab = state.activeTab;
-    document.getElementById('screen-list').style.display  = tab === 'list' ? 'block' : 'none';
-    document.getElementById('screen-meals').style.display = tab !== 'list' ? 'block' : 'none';
-    if (tab === 'list') { renderList(); renderProgress(); }
-    else { renderPersonFilter(); renderMealList(); }
+    document.getElementById('screen-list').style.display   = tab === 'list'   ? 'block' : 'none';
+    document.getElementById('screen-meals').style.display  = (tab !== 'list' && tab !== 'macros') ? 'block' : 'none';
+    document.getElementById('screen-macros').style.display = tab === 'macros' ? 'block' : 'none';
+    if (tab === 'list')        { renderList(); renderProgress(); }
+    else if (tab === 'macros') { renderMacros(); }
+    else                       { renderPersonFilter(); renderMealList(); }
   }
 
   function renderPersonFilter() {
@@ -248,21 +205,15 @@ const App = (() => {
 
   function renderMealList() {
     const tab = state.activeTab;
-    if (tab === 'list') return;
+    if (tab === 'list' || tab === 'macros') return;
     const meals = state.meals[tab] || [];
     const el = document.getElementById('meal-list');
-
-    const filtered = meals.filter(m =>
-      state.personFilter === 'All' || m.person === state.personFilter || m.person === 'Both'
-    );
-
+    const filtered = meals.filter(m => state.personFilter === 'All' || m.person === state.personFilter || m.person === 'Both');
     if (!filtered.length) { el.innerHTML = `<div class="list-empty">No meals found for this filter.</div>`; return; }
-
     el.innerHTML = filtered.map(m => {
       const servings = state.mealServings[m.name] || 1;
       const safeName = m.name.replace(/'/g, "\\'");
-      const personTag = m.person !== 'Both'
-        ? `<span class="person-tag ${m.person === 'Le Clue' ? 'tag-you' : 'tag-her'}">${m.person}</span>` : '';
+      const personTag = m.person !== 'Both' ? `<span class="person-tag ${m.person === 'Le Clue' ? 'tag-you' : 'tag-her'}">${m.person}</span>` : '';
       return `
         <div class="meal-card ${m.include ? 'selected' : ''}">
           <div class="meal-card-main" onclick="App.toggleMeal('${safeName}', '${tab}')">
@@ -295,16 +246,122 @@ const App = (() => {
     });
   }
 
+  // ── Macros rendering ──────────────────────────────────────
+  function renderMacros() {
+    const el = document.getElementById('screen-macros');
+    const summary = state.macroSummary;
+    const people = state.people.filter(p => p.include);
+
+    if (!people.length || !Object.keys(summary).length) {
+      el.innerHTML = `<div class="list-empty">Select meals in Breakfast, Lunch or Dinner to see your macro breakdown.</div>`;
+      return;
+    }
+
+    const totalSelected = [...state.meals.breakfast, ...state.meals.lunch, ...state.meals.dinner].filter(m => m.include).length;
+    if (totalSelected === 0) {
+      el.innerHTML = `<div class="list-empty">Select meals in Breakfast, Lunch or Dinner to see your macro breakdown.</div>`;
+      return;
+    }
+
+    // Daily targets (approximate from dietitian templates)
+    const targets = {
+      'Le Clue': { kcal: 1800, protein: 120, carbs: 180, fat: 60 },
+    };
+    const defaultTarget = { kcal: 1600, protein: 80, carbs: 200, fat: 55 };
+
+    el.innerHTML = `
+      <div class="macros-wrap">
+
+        <!-- Daily totals side by side -->
+        <div class="macros-section-title">Daily totals</div>
+        <div class="macros-people-grid">
+          ${people.map(person => {
+            const data = summary[person.name];
+            if (!data) return '';
+            const d = data.daily;
+            const t = targets[person.name] || defaultTarget;
+            return `
+              <div class="macro-person-card">
+                <div class="macro-person-name">${person.name}</div>
+                ${macroRow('🔥', 'Calories', d.kcal, t.kcal, 'kcal', '#aaff4d')}
+                ${macroRow('🥩', 'Protein',  d.protein, t.protein, 'g', '#6aafd4')}
+                ${macroRow('🌾', 'Carbs',    d.carbs,   t.carbs,   'g', '#f0c040')}
+                ${macroRow('🫒', 'Fat',      d.fat,     t.fat,     'g', '#b990cc')}
+              </div>`;
+          }).join('')}
+        </div>
+
+        <!-- Per meal breakdown -->
+        <div class="macros-section-title" style="margin-top:16px">Per meal</div>
+        ${renderMealMacros(people, summary)}
+
+      </div>`;
+  }
+
+  function macroRow(icon, label, value, target, unit, color) {
+    const pct = Math.min(100, Math.round((value / target) * 100));
+    const over = value > target;
+    return `
+      <div class="macro-row">
+        <div class="macro-row-label"><span style="font-size:13px">${icon}</span> ${label}</div>
+        <div class="macro-row-value" style="color:${over ? '#ff6b6b' : color}">${value}${unit}</div>
+        <div class="macro-bar-wrap">
+          <div class="macro-bar-fill" style="width:${pct}%; background:${over ? '#ff6b6b' : color}"></div>
+        </div>
+        <div class="macro-target">/ ${target}${unit}</div>
+      </div>`;
+  }
+
+  function renderMealMacros(people, summary) {
+    const allMealNames = [...new Set(
+      Object.values(summary).flatMap(s => s.meals.map(m => m.mealName))
+    )];
+
+    if (!allMealNames.length) return `<div class="list-empty" style="margin:8px 0">No meals selected.</div>`;
+
+    const mealTypeIcons = { breakfast: '🌅', lunch: '🥗', dinner: '🍲' };
+
+    return allMealNames.map(mealName => {
+      const firstPerson = Object.values(summary)[0];
+      const mealInfo = firstPerson?.meals.find(m => m.mealName === mealName);
+      const icon = mealTypeIcons[mealInfo?.mealType] || '🍽';
+
+      return `
+        <div class="meal-macro-card">
+          <div class="meal-macro-header">
+            <span style="font-size:14px">${icon}</span>
+            <span class="meal-macro-name">${mealName}</span>
+            ${mealInfo?.servings > 1 ? `<span class="meal-macro-servings">${mealInfo.servings}×</span>` : ''}
+          </div>
+          <div class="meal-macro-people">
+            ${people.map(person => {
+              const data = summary[person.name];
+              const meal = data?.meals.find(m => m.mealName === mealName);
+              if (!meal) return '';
+              return `
+                <div class="meal-macro-person">
+                  <div class="meal-macro-person-name">${person.name}</div>
+                  <div class="meal-macro-stats">
+                    <div class="meal-stat"><span style="color:#aaff4d">${meal.kcal}</span><span class="meal-stat-label">kcal</span></div>
+                    <div class="meal-stat"><span style="color:#6aafd4">${meal.protein}g</span><span class="meal-stat-label">protein</span></div>
+                    <div class="meal-stat"><span style="color:#f0c040">${meal.carbs}g</span><span class="meal-stat-label">carbs</span></div>
+                    <div class="meal-stat"><span style="color:#b990cc">${meal.fat}g</span><span class="meal-stat-label">fat</span></div>
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Shopping list rendering ───────────────────────────────
   function renderList() {
     const el = document.getElementById('shopping-list');
     const items = state.shoppingList;
     if (!items.length) { el.innerHTML = `<div class="list-empty">Select meals in Breakfast, Lunch or Dinner to build your list.</div>`; return; }
-
     const cats = {};
     items.forEach(item => { if (!cats[item.category]) cats[item.category] = []; cats[item.category].push(item); });
-
     const catIcons = { 'Proteins':'🥩','Fresh Produce':'🥬','Canned & Jarred':'🥫','Stocks & Liquids':'🍲','Pantry & Spices':'🫙','Fats':'🫒','Veg':'🥦','Veg/Fruit':'🍓','Carbs':'🌾','Carbs (Week 1)':'🌾' };
-
     el.innerHTML = Object.entries(cats).map(([cat, catItems]) => {
       const catDone = catItems.filter(i => state.checked[itemKey(i)]).length;
       return `
@@ -322,10 +379,8 @@ const App = (() => {
               const key = itemKey(item);
               const isChecked = !!state.checked[key];
               const qtyStr = formatQty(item.qty, item.unit, item.hasQty);
-              const allNames = state.people.map(p => p.name);
-              const isAll = item.people.length >= allNames.length;
-              const peopleTag = isAll ? '' : item.people.map(p =>
-                `<span class="person-tag ${p === 'Le Clue' ? 'tag-you' : 'tag-her'}">${p}</span>`).join('');
+              const isAll = item.people.length >= state.people.filter(p => p.include).length;
+              const peopleTag = isAll ? '' : item.people.map(p => `<span class="person-tag ${p === 'Le Clue' ? 'tag-you' : 'tag-her'}">${p}</span>`).join('');
               return `
                 <div class="item ${isChecked ? 'checked' : ''}" data-key="${key}" onclick="App.toggleItem('${key.replace(/'/g,"\\'")}')">
                   <div class="checkbox"><span class="checkmark">✓</span></div>
@@ -380,22 +435,15 @@ const App = (() => {
   function renderRecipesMealList() {
     document.getElementById('cook-mode').style.display = 'none';
     document.getElementById('recipes-meal-list-wrap').style.display = 'block';
-
     const tab = state.recipesTab;
     const meals = state.meals[tab] || [];
     const el = document.getElementById('recipes-meal-list');
-
-    const filtered = meals.filter(m =>
-      state.recipePersonFilter === 'All' || m.person === state.recipePersonFilter || m.person === 'Both'
-    );
-
+    const filtered = meals.filter(m => state.recipePersonFilter === 'All' || m.person === state.recipePersonFilter || m.person === 'Both');
     if (!filtered.length) { el.innerHTML = `<div class="list-empty">No meals found.</div>`; return; }
-
     el.innerHTML = filtered.map(m => {
       const hasSteps = !!state.cookingSteps[m.name];
       const safeName = m.name.replace(/'/g, "\\'");
-      const personTag = m.person !== 'Both'
-        ? `<span class="person-tag ${m.person === 'Le Clue' ? 'tag-you' : 'tag-her'}">${m.person}</span>` : '';
+      const personTag = m.person !== 'Both' ? `<span class="person-tag ${m.person === 'Le Clue' ? 'tag-you' : 'tag-her'}">${m.person}</span>` : '';
       return `
         <div class="meal-card ${hasSteps ? 'clickable' : ''}" onclick="${hasSteps ? `App.openMeal('${safeName}')` : ''}">
           <div class="meal-card-main">
@@ -414,15 +462,11 @@ const App = (() => {
     document.getElementById('recipes-meal-list-wrap').style.display = 'none';
     const cookEl = document.getElementById('cook-mode');
     cookEl.style.display = 'block';
-
     const mealName = state.activeMeal;
     const mealData = state.cookingSteps[mealName];
     const mealInfo = [...state.meals.breakfast, ...state.meals.lunch, ...state.meals.dinner].find(m => m.name === mealName);
-
     if (!mealData) { cookEl.innerHTML = `<div class="list-empty">No steps found for this meal.</div>`; return; }
-
     const servings = state.mealServings[mealName] || 1;
-
     cookEl.innerHTML = `
       <div class="cook-header">
         <button class="back-btn" onclick="App.closeMeal()">‹ Back</button>
@@ -433,7 +477,6 @@ const App = (() => {
           <button class="srv-btn" onclick="App.changeCookServings('${mealName.replace(/'/g,"\\'")}', 1)">+</button>
         </div>
       </div>
-
       <div class="cook-ingredients">
         <div class="cook-section-title">🧾 Ingredients</div>
         ${mealInfo ? mealInfo.ingredients.map(ing => {
@@ -441,7 +484,6 @@ const App = (() => {
           return `<div class="ing-row">${qty}<span class="ing-name">${ing.ingredient}</span>${ing.notes ? `<span class="ing-note">${ing.notes}</span>` : ''}</div>`;
         }).join('') : ''}
       </div>
-
       <div class="cook-steps">
         <div class="cook-section-title">👨‍🍳 Steps</div>
         ${mealData.steps.map((step, idx) => {
@@ -464,8 +506,7 @@ const App = (() => {
               </div>
             </div>`;
         }).join('')}
-      </div>
-    `;
+      </div>`;
   }
 
   function changeCookServings(mealName, delta) {
@@ -475,24 +516,17 @@ const App = (() => {
 
   // ── Helpers ───────────────────────────────────────────────
   function itemKey(item) { return `${item.category}|${item.name}|${item.unit || ''}`; }
-
   function formatQty(qty, unit, hasQty) {
     if (!hasQty || qty === 0) return '';
     if (unit === 'g'  && qty >= 1000) return `${(qty / 1000).toFixed(1)} kg`;
     if (unit === 'ml' && qty >= 1000) return `${(qty / 1000).toFixed(1)} L`;
     return unit ? `${qty} ${unit}` : '';
   }
-
-  function setLoading(val) {
-    state.loading = val;
-    document.getElementById('loading-bar').style.display = val ? 'block' : 'none';
-  }
-
+  function setLoading(val) { state.loading = val; document.getElementById('loading-bar').style.display = val ? 'block' : 'none'; }
   function setError(msg) {
     state.error = msg;
     const el = document.getElementById('error-banner');
-    if (msg) { el.textContent = msg; el.style.display = 'block'; }
-    else el.style.display = 'none';
+    if (msg) { el.textContent = msg; el.style.display = 'block'; } else el.style.display = 'none';
   }
 
   return { init, toggleMeal, changeMealServings, toggleItem, setPersonFilter, setRecipePersonFilter, openMeal, closeMeal, startTimer, changeCookServings };
@@ -500,25 +534,29 @@ const App = (() => {
 
 function onGisLoad() { App.init(); }
 
-// ── Timer beep (Web Audio API — no external files needed) ──
+// ── Audio ─────────────────────────────────────────────────
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+document.addEventListener('touchstart', initAudio, { once: false, passive: true });
+document.addEventListener('click', initAudio, { once: false, passive: true });
+
 function playBeep() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // Three short beeps
-    [0, 0.35, 0.7].forEach(offset => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+    initAudio();
+    if (!audioCtx) return;
+    [0, 0.3, 0.6].forEach((offset, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime + offset);
-      gain.gain.setValueAtTime(0.6, ctx.currentTime + offset);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.25);
-      osc.start(ctx.currentTime + offset);
-      osc.stop(ctx.currentTime + offset + 0.25);
+      osc.frequency.setValueAtTime(660 + (i * 220), audioCtx.currentTime + offset);
+      gain.gain.setValueAtTime(0.5, audioCtx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + offset + 0.28);
+      osc.start(audioCtx.currentTime + offset);
+      osc.stop(audioCtx.currentTime + offset + 0.28);
     });
-  } catch(e) {
-    console.log('Audio not available:', e);
-  }
+  } catch(e) { console.log('Audio not available:', e); }
 }
