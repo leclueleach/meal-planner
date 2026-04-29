@@ -2,19 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Meal Planner — Shopping List</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Meal Planner</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-<!-- Loading bar -->
 <div id="loading-bar"></div>
-
-<!-- Error banner -->
 <div id="error-banner"></div>
 
-<!-- ── Login Screen ───────────────────────────────────────── -->
+<!-- ── Login ─────────────────────────────────────────────── -->
 <div id="screen-login">
   <div class="login-logo">Meal Planner</div>
   <div class="login-sub">Dietitian-aligned · Batch cook · For 2</div>
@@ -32,52 +29,75 @@
   </div>
 </div>
 
-<!-- ── App Screen ─────────────────────────────────────────── -->
+<!-- ── App ───────────────────────────────────────────────── -->
 <div id="screen-app">
 
   <!-- Header -->
-  <div class="header">
-    <div class="header-row">
-      <div class="app-title">Shopping List</div>
-      <div class="header-actions">
-        <button id="btn-refresh" class="btn btn-ghost">Refresh</button>
-        <button id="btn-uncheck" class="btn btn-ghost">Uncheck all</button>
-        <button id="btn-signout" class="btn btn-ghost">Sign out</button>
+  <header class="app-header">
+    <div class="header-left">
+      <span id="header-title" class="header-title">🌅 Breakfast</span>
+    </div>
+    <div class="header-right">
+      <!-- Meal tab actions -->
+      <div id="header-actions-meals" style="display:flex;gap:6px">
+        <button id="btn-refresh" class="btn btn-ghost btn-sm" onclick="loadData && App && document.getElementById('btn-refresh').dispatchEvent(new Event('click-refresh'))">Refresh</button>
+        <button id="btn-signout" class="btn btn-ghost btn-sm">Sign out</button>
+      </div>
+      <!-- List tab actions -->
+      <div id="header-actions-list" style="display:none;gap:6px">
+        <button id="btn-uncheck" class="btn btn-ghost btn-sm">Uncheck all</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('btn-refresh').click()">Refresh</button>
       </div>
     </div>
-    <div class="app-subtitle">Synced from Google Sheets</div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
-    </div>
-    <div class="progress-label" id="progress-label">0 of 0 items ticked</div>
-  </div>
+  </header>
 
-  <!-- Content -->
-  <div class="content">
+  <!-- Main scrollable area -->
+  <main class="app-main">
 
-    <!-- People + Meals selectors -->
-    <div class="panels">
-      <div class="panel">
-        <div class="panel-title">👤 People</div>
-        <div id="people-panel"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-title">🍽 Meals</div>
-        <div id="meals-panel"></div>
-      </div>
+    <!-- Meal screens (Breakfast / Lunch / Dinner) -->
+    <div id="screen-meals">
+      <div id="person-filter" class="person-filter"></div>
+      <div id="meal-list" class="meal-list"></div>
     </div>
 
-    <!-- Shopping list -->
-    <div class="section-label">Shopping list</div>
-    <div id="shopping-list"></div>
+    <!-- Shopping list screen -->
+    <div id="screen-list" style="display:none">
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="progress-label" id="progress-label">0 of 0 items ticked</div>
+      </div>
+      <div id="shopping-list"></div>
+    </div>
 
-  </div>
+  </main>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <button class="nav-tab active" data-tab="breakfast">
+      <span class="nav-icon">🌅</span>
+      <span class="nav-label">Breakfast</span>
+      <span class="nav-badge" id="badge-breakfast" style="display:none">0</span>
+    </button>
+    <button class="nav-tab" data-tab="lunch">
+      <span class="nav-icon">🥗</span>
+      <span class="nav-label">Lunch</span>
+      <span class="nav-badge" id="badge-lunch" style="display:none">0</span>
+    </button>
+    <button class="nav-tab" data-tab="dinner">
+      <span class="nav-icon">🍲</span>
+      <span class="nav-label">Dinner</span>
+      <span class="nav-badge" id="badge-dinner" style="display:none">0</span>
+    </button>
+    <button class="nav-tab" data-tab="list">
+      <span class="nav-icon">🛒</span>
+      <span class="nav-label">List</span>
+      <span class="nav-badge" id="badge-list" style="display:none">0</span>
+    </button>
+  </nav>
+
 </div>
 
-<!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" onload="onGisLoad()" async defer></script>
-
-<!-- App scripts — order matters -->
 <script src="config.js"></script>
 <script src="auth.js"></script>
 <script src="sheets.js"></script>
