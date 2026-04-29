@@ -138,11 +138,15 @@ const App = (() => {
   }
 
   function renderHeader() {
+    // header-title removed in redesign — tabs are now in top nav
     const tab = state.activeTab;
-    const titles = { breakfast: '🌅 Breakfast', lunch: '🥗 Lunch', dinner: '🍲 Dinner', list: '🛒 Shopping List' };
-    document.getElementById('header-title').textContent = titles[tab] || '';
-    document.getElementById('header-actions-list').style.display = tab === 'list' ? 'flex' : 'none';
-    document.getElementById('header-actions-meals').style.display = tab !== 'list' ? 'flex' : 'none';
+
+
+    const listEl = document.getElementById('header-actions-list');
+    const mealsEl = document.getElementById('header-actions-meals');
+    if (listEl) listEl.style.display = tab === 'list' ? 'flex' : 'none';
+    if (mealsEl) mealsEl.style.display = tab !== 'list' ? 'flex' : 'none';
+
   }
 
   function renderMainContent() {
