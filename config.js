@@ -22,6 +22,7 @@ const CONFIG = {
     BREAKFAST: 'Breakfast',
     LUNCH:     'Lunch',
     DINNER:    'Dinner',
+    COOKING:   'Cooking',
   },
 
   // OAuth scopes — read-only access to Sheets is all we need
