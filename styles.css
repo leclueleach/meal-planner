@@ -722,6 +722,8 @@ html, body {
 /* ── Planner ── */
 .planner-wrap { padding: 10px 12px 80px; }
 
+#planner-section .app-main { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
 /* Week strip */
 .week-strip {
   display: grid;
@@ -745,9 +747,8 @@ html, body {
 }
 .day-chip.enabled { border-color: var(--accent); background: var(--accent-dim); }
 .day-chip.today .day-chip-num { color: var(--accent); font-weight: 600; }
-.day-chip-name { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.day-chip-num  { font-size: 0.85rem; color: var(--text); }
-.day-chip-check { font-size: 0.6rem; color: var(--accent); font-weight: 700; height: 10px; }
+.day-chip-name { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+.day-chip-check { font-size: 0.65rem; color: var(--accent); font-weight: 700; height: 12px; }
 
 /* Day card */
 .planner-day {
