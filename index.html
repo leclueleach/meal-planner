@@ -32,6 +32,7 @@
 <!-- ── App ───────────────────────────────────────────────── -->
 <div id="screen-app">
 
+  <!-- Section switcher -->
   <div class="section-switcher">
     <button class="section-tab active" data-section="shopping">🛒 Shopping</button>
     <button class="section-tab" data-section="recipes">📖 Recipes</button>
@@ -61,7 +62,6 @@
         <span class="nav-icon">📊</span><span class="nav-label">Macros</span>
       </button>
     </div>
-
     <div class="actions-bar">
       <div id="header-actions-meals" style="display:flex;gap:6px">
         <button id="btn-refresh" class="btn btn-ghost btn-sm">Refresh</button>
@@ -72,7 +72,6 @@
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('btn-refresh').click()">Refresh</button>
       </div>
     </div>
-
     <main class="app-main">
       <div id="screen-meals">
         <div id="person-filter" class="person-filter"></div>
@@ -111,7 +110,14 @@
     </main>
   </div>
 
-</div>
+  <!-- ══ PLANNER SECTION ═══════════════════════════════════ -->
+  <div id="planner-section" style="display:none">
+    <main class="app-main">
+      <div id="planner-content"></div>
+    </main>
+  </div>
+
+</div><!-- end screen-app -->
 
 <script src="https://accounts.google.com/gsi/client" onload="onGisLoad()" async defer></script>
 <script src="config.js"></script>
@@ -119,12 +125,6 @@
 <script src="sheets.js"></script>
 <script src="planner.js"></script>
 <script src="app.js"></script>
-  <!-- ══ PLANNER SECTION ════════════════════════════════ -->
-  <div id="planner-section" style="display:none">
-    <main class="app-main">
-      <div id="planner-content"></div>
-    </main>
-  </div>
 
 </body>
 </html>
