@@ -236,17 +236,18 @@ const Planner = (() => {
     });
 
     const n = enabledDays.length;
-    const targets = {
-      'Le Clue': { kcal: 1800, protein: 120, carbs: 180, fat: 60 },
-    };
-    const defaultTarget = { kcal: 1600, protein: 80, carbs: 200, fat: 55 };
-
+    // Targets come from People sheet
     return `
       <div class="weekly-macros">
         <div class="macros-section-title">Weekly summary (${n} day${n !== 1 ? 's' : ''})</div>
         <div class="macros-people-grid">
           ${people.map(person => {
-            const t = targets[person.name] || defaultTarget;
+            const t = {
+              kcal:    person.target_kcal    || 1800,
+              protein: person.target_protein || 120,
+              carbs:   person.target_carbs   || 180,
+              fat:     person.target_fat     || 60,
+            };
             const wt = { kcal: t.kcal * n, protein: t.protein * n, carbs: t.carbs * n, fat: t.fat * n };
             const d = totals[person.name];
             return `
