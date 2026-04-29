@@ -347,17 +347,22 @@ const Planner = (() => {
 
 // ── PlannerSection — bridge between App and Planner ──────
 const PlannerSection = (() => {
-  let _container = null;
 
-  function mount(container) { _container = container; }
+  function mount(container) {
+    // No-op — container is looked up lazily on refresh
+  }
 
   function refresh() {
-    if (!_container) return;
+    const container = document.getElementById('planner-content');
+    if (!container) return;
     const people   = window._plannerPeople;
     const allMeals = window._plannerMeals;
     const macros   = window._plannerMacroTable;
-    if (!people || !allMeals || !macros) return;
-    Planner.render(_container, people, allMeals, macros);
+    if (!people || !allMeals || !macros) {
+      container.innerHTML = '<div class="list-empty" style="margin:20px 12px">Loading data — please wait and try again.</div>';
+      return;
+    }
+    Planner.render(container, people, allMeals, macros);
   }
 
   return { mount, refresh };
