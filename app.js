@@ -35,6 +35,7 @@ const App = (() => {
     document.getElementById('btn-refresh-r').addEventListener('click', loadData);
     document.getElementById('btn-uncheck').addEventListener('click', clearChecked);
     document.querySelectorAll('.section-tab').forEach(t => t.addEventListener('click', () => switchSection(t.dataset.section)));
+    PlannerSection.mount(document.getElementById('planner-content'));
     document.querySelectorAll('.nav-tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
     document.querySelectorAll('.rec-tab').forEach(t => t.addEventListener('click', () => switchRecipesTab(t.dataset.tab)));
   }
@@ -63,6 +64,11 @@ const App = (() => {
       state.meals        = { breakfast, lunch, dinner };
       state.cookingSteps = cookingSteps;
       state.macroTable   = macroTable;
+      // Init planner with people and meals
+      window._plannerPeople = people;
+      window._plannerMeals  = { breakfast, lunch, dinner };
+      window._plannerMacroTable = macroTable;
+      Planner.init(people);
       state.checked      = {};
       state.mealServings = {};
       [...breakfast, ...lunch, ...dinner].forEach(m => { state.mealServings[m.name] = 1; });
