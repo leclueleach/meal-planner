@@ -31,6 +31,10 @@ const Sheets = (() => {
       fat_tsp:    parseFloat(r[4]) || 0,
       veg_cups:   parseFloat(r[5]) || 0,
       notes: r[6] || '',
+      target_kcal:    parseFloat(r[7]) || 1800,
+      target_protein: parseFloat(r[8]) || 120,
+      target_carbs:   parseFloat(r[9]) || 180,
+      target_fat:     parseFloat(r[10]) || 60,
     }));
   }
 
