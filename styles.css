@@ -67,6 +67,7 @@ html, body {
   align-items: center;
   justify-content: center;
   height: 100vh;
+  height: 100dvh;
   padding: 40px 24px;
   text-align: center;
   gap: 16px;
@@ -130,7 +131,7 @@ html, body {
 .btn-sm { padding: 5px 10px; font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; }
 
 /* ── App shell ── */
-#screen-app { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+#screen-app { display: none; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
 
 /* ── Section switcher ── */
 .section-switcher {
@@ -571,3 +572,145 @@ html, body {
 }
 .timer-btn:hover { background: #bbff66; }
 .timer-btn.timer-done { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border); }
+
+/* ── Macros tab ── */
+.macros-wrap { padding: 10px 12px 80px; }
+
+.macros-section-title {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.macros-people-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.macro-person-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.macro-person-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--accent);
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.macro-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0 6px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.macro-row-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  grid-column: 1;
+  grid-row: 1;
+  white-space: nowrap;
+}
+
+.macro-row-value {
+  font-size: 0.82rem;
+  font-weight: 500;
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+}
+
+.macro-target {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  grid-column: 3;
+  grid-row: 1;
+  white-space: nowrap;
+}
+
+.macro-bar-wrap {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.macro-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* ── Per meal macro cards ── */
+.meal-macro-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.meal-macro-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.meal-macro-name {
+  font-size: 0.85rem;
+  color: var(--text);
+  flex: 1;
+}
+
+.meal-macro-servings {
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.meal-macro-people { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
+
+.meal-macro-person { display: flex; align-items: center; gap: 10px; }
+
+.meal-macro-person-name {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  min-width: 55px;
+}
+
+.meal-macro-stats {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.meal-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.meal-stat span:first-child { font-size: 0.82rem; font-weight: 500; }
+.meal-stat-label { font-size: 0.58rem; color: var(--text-muted); }
