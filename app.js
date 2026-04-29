@@ -196,6 +196,7 @@ const App = (() => {
         if (btn) { btn.textContent = '✓ Done'; btn.classList.add('timer-done'); }
         // Vibrate if supported
         if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+        playBeep();
       }
     }, 1000);
   }
@@ -498,3 +499,26 @@ const App = (() => {
 })();
 
 function onGisLoad() { App.init(); }
+
+// ── Timer beep (Web Audio API — no external files needed) ──
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Three short beeps
+    [0, 0.35, 0.7].forEach(offset => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime + offset);
+      gain.gain.setValueAtTime(0.6, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.25);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.25);
+    });
+  } catch(e) {
+    console.log('Audio not available:', e);
+  }
+}
