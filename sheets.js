@@ -283,5 +283,5 @@ const Sheets = (() => {
     });
   }
 
-  return { getPeople, getMeals, getCookingSteps, getMacroTable, buildShoppingList, buildMacroSummary };
+  return { getPeople, getMeals, getCookingSteps, getMacroTable, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros };
 })();
