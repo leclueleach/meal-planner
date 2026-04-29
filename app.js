@@ -10,6 +10,7 @@ const App = (() => {
     recipes: [],
     shoppingList: [],
     checked: {},       // { itemKey: true/false }
+    mealServings: {},  // { mealName: number of times to make }
     loading: false,
     error: null,
     signedIn: false,
@@ -60,6 +61,9 @@ const App = (() => {
       state.people = people;
       state.recipes = recipes;
       state.checked = {};
+      // Initialise servings to 1 for each meal
+      state.mealServings = {};
+      recipes.forEach(r => { state.mealServings[r.name] = 1; });
       rebuildList();
       renderAll();
     } catch (err) {
@@ -70,7 +74,7 @@ const App = (() => {
   }
 
   function rebuildList() {
-    state.shoppingList = Sheets.buildShoppingList(state.people, state.recipes);
+    state.shoppingList = Sheets.buildShoppingList(state.people, state.recipes, state.mealServings);
   }
 
   // ── Toggle handlers ──────────────────────────────────────
@@ -94,6 +98,16 @@ const App = (() => {
     state.checked[key] = !state.checked[key];
     renderProgress();
     renderList();
+  }
+
+  function changeMealServings(name, delta) {
+    const current = state.mealServings[name] || 1;
+    state.mealServings[name] = Math.max(1, current + delta);
+    rebuildList();
+    state.checked = {};
+    renderMealsPanel();
+    renderList();
+    renderProgress();
   }
 
   function clearChecked() {
@@ -134,16 +148,27 @@ const App = (() => {
       el.innerHTML = '<p class="panel-empty">No recipes found in sheet.</p>';
       return;
     }
-    el.innerHTML = state.recipes.map(r => `
-      <label class="panel-item ${r.include ? 'active' : ''}">
-        <input type="checkbox" ${r.include ? 'checked' : ''} onchange="App.toggleMeal('${r.name.replace(/'/g, "\\'")}')">
-        <span class="panel-check">${r.include ? '✓' : ''}</span>
-        <span class="panel-label">
-          <span class="panel-name">${r.name}</span>
-          <span class="panel-sub">${r.ingredients.length} ingredients</span>
-        </span>
-      </label>
-    `).join('');
+    el.innerHTML = state.recipes.map(r => {
+      const servings = state.mealServings[r.name] || 1;
+      return `
+        <div class="panel-item ${r.include ? 'active' : ''}">
+          <div class="panel-item-left" onclick="App.toggleMeal('${r.name.replace(/'/g, "\\'")}')">
+            <input type="checkbox" ${r.include ? 'checked' : ''} style="display:none">
+            <span class="panel-check">${r.include ? '✓' : ''}</span>
+            <span class="panel-label">
+              <span class="panel-name">${r.name}</span>
+              <span class="panel-sub">${r.ingredients.length} ingredients</span>
+            </span>
+          </div>
+          ${r.include ? `
+          <div class="meal-servings" onclick="event.stopPropagation()">
+            <button class="srv-btn" onclick="App.changeMealServings('${r.name.replace(/'/g, "\\'")}', -1)">−</button>
+            <span class="srv-count">${servings}×</span>
+            <button class="srv-btn" onclick="App.changeMealServings('${r.name.replace(/'/g, "\\'")}', 1)">+</button>
+          </div>` : ''}
+        </div>
+      `;
+    }).join('');
   }
 
   function renderList() {
@@ -237,7 +262,7 @@ const App = (() => {
     else { el.style.display = 'none'; }
   }
 
-  return { init, togglePerson, toggleMeal, toggleItem };
+  return { init, togglePerson, toggleMeal, toggleItem, changeMealServings };
 })();
 
 // Kick off once Google Identity Services is ready
