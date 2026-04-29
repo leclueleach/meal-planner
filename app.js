@@ -72,6 +72,9 @@ const App = (() => {
       state.checked      = {};
       state.mealServings = {};
       [...breakfast, ...lunch, ...dinner].forEach(m => { state.mealServings[m.name] = 1; });
+      // Restore saved meal selections and checked items
+      loadMealSelections();
+      loadChecked();
       rebuildList();
       rebuildMacros();
       renderAll();
@@ -86,6 +89,55 @@ const App = (() => {
 
   function rebuildMacros() {
     state.macroSummary = Sheets.buildMacroSummary(state.people, state.meals, state.mealServings, state.macroTable);
+  }
+
+  // ── Persist checked state ─────────────────────────────────
+  const CHECKED_KEY = 'mealplanner_checked_v1';
+  const MEALS_KEY   = 'mealplanner_meals_v1';
+  const SERVINGS_KEY = 'mealplanner_servings_v1';
+
+  function saveChecked() {
+    try { localStorage.setItem(CHECKED_KEY, JSON.stringify(state.checked)); } catch(e) {}
+  }
+
+  function loadChecked() {
+    try {
+      const saved = localStorage.getItem(CHECKED_KEY);
+      if (saved) state.checked = JSON.parse(saved);
+    } catch(e) { state.checked = {}; }
+  }
+
+  function saveMealSelections() {
+    try {
+      const selections = {};
+      ['breakfast','lunch','dinner'].forEach(type => {
+        selections[type] = state.meals[type].map(m => ({ name: m.name, include: m.include }));
+      });
+      localStorage.setItem(MEALS_KEY, JSON.stringify(selections));
+      localStorage.setItem(SERVINGS_KEY, JSON.stringify(state.mealServings));
+    } catch(e) {}
+  }
+
+  function loadMealSelections() {
+    try {
+      const saved = localStorage.getItem(MEALS_KEY);
+      const servings = localStorage.getItem(SERVINGS_KEY);
+      if (saved) {
+        const selections = JSON.parse(saved);
+        ['breakfast','lunch','dinner'].forEach(type => {
+          if (selections[type]) {
+            selections[type].forEach(s => {
+              const meal = state.meals[type].find(m => m.name === s.name);
+              if (meal) meal.include = s.include;
+            });
+          }
+        });
+      }
+      if (servings) {
+        const parsed = JSON.parse(servings);
+        Object.assign(state.mealServings, parsed);
+      }
+    } catch(e) {}
   }
 
   // ── Section switching ─────────────────────────────────────
@@ -133,7 +185,7 @@ const App = (() => {
     const meal = state.meals[mealType].find(m => m.name === name);
     if (meal) meal.include = !meal.include;
     rebuildList(); rebuildMacros();
-    state.checked = {};
+    saveMealSelections();
     renderMealList(); renderBadges();
     if (state.activeTab === 'macros') renderMacros();
   }
@@ -141,7 +193,7 @@ const App = (() => {
   function changeMealServings(name, mealType, delta) {
     state.mealServings[name] = Math.max(1, (state.mealServings[name] || 1) + delta);
     rebuildList(); rebuildMacros();
-    state.checked = {};
+    saveMealSelections();
     renderMealList();
     if (state.activeTab === 'macros') renderMacros();
   }
@@ -151,9 +203,10 @@ const App = (() => {
     const el = document.querySelector(`[data-key="${CSS.escape(key)}"]`);
     if (el) el.classList.toggle('checked', !!state.checked[key]);
     updateCatCounts(); renderProgress();
+    saveChecked();
   }
 
-  function clearChecked() { state.checked = {}; renderList(); renderProgress(); }
+  function clearChecked() { state.checked = {}; saveChecked(); renderList(); renderProgress(); }
 
   // ── Cook mode ─────────────────────────────────────────────
   function openMeal(mealName) { state.activeMeal = mealName; stopTimer(); renderCookMode(); }
