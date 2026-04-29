@@ -269,11 +269,13 @@ const App = (() => {
       return;
     }
 
-    // Daily targets (approximate from dietitian templates)
-    const targets = {
-      'Le Clue': { kcal: 1800, protein: 120, carbs: 180, fat: 60 },
-    };
-    const defaultTarget = { kcal: 1600, protein: 80, carbs: 200, fat: 55 };
+    // Targets read from People sheet
+    const getTarget = (person) => ({
+      kcal:    person.target_kcal    || 1800,
+      protein: person.target_protein || 120,
+      carbs:   person.target_carbs   || 180,
+      fat:     person.target_fat     || 60,
+    });
 
     el.innerHTML = `
       <div class="macros-wrap">
@@ -285,7 +287,7 @@ const App = (() => {
             const data = summary[person.name];
             if (!data) return '';
             const d = data.daily;
-            const t = targets[person.name] || defaultTarget;
+            const t = getTarget(person);
             return `
               <div class="macro-person-card">
                 <div class="macro-person-name">${person.name}</div>
