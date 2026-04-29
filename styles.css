@@ -234,7 +234,7 @@ html, body {
 }
 
 /* ── Main scrollable ── */
-.app-main { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+.app-main { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
 
 /* ── Person filter ── */
 .person-filter {
@@ -571,12 +571,3 @@ html, body {
 }
 .timer-btn:hover { background: #bbff66; }
 .timer-btn.timer-done { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border); }
-
-/* ── Safe area padding for phone navigation bar ── */
-.app-main {
-  padding-bottom: env(safe-area-inset-bottom, 16px);
-}
-
-body {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
