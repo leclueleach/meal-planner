@@ -87,33 +87,30 @@ const Sheets = (() => {
   // ── Build Shopping List ──────────────────────────────────
   // Combines selected meals × selected people into a flat ingredient list,
   // grouped by category. Protein quantities scale per person profile.
-  function buildShoppingList(people, recipes) {
+  function buildShoppingList(people, recipes, mealServings = {}) {
     const selectedPeople = people.filter(p => p.include);
     const selectedMeals = recipes.filter(r => r.include);
 
     if (!selectedPeople.length || !selectedMeals.length) return [];
 
-    // Aggregate ingredients across meals
-    // Key: `category|ingredient|unit` → accumulated qty + meal tags
     const agg = {};
 
     selectedMeals.forEach(meal => {
+      const timesToMake = mealServings[meal.name] || 1;
       meal.ingredients.forEach(ing => {
-        // Scale protein-related qty by each person's protein_g / 120 (base serving)
-        // Non-protein ingredients are per-meal shared (multiply by number of people)
         const isProtein = ing.category === 'Proteins';
+        const isCarb = ing.category === 'Carbs (Week 1)';
 
         selectedPeople.forEach(person => {
           let scaledQty = ing.qty;
           if (scaledQty !== null) {
             if (isProtein) {
               scaledQty = (ing.qty / 120) * person.protein_g;
-            }
-            // Carb ingredients scale by person's carbs_cups / 1
-            const isCarb = ing.category === 'Carbs (Week 1)';
-            if (isCarb) {
+            } else if (isCarb) {
               scaledQty = ing.qty * person.carbs_cups;
             }
+            // Multiply by how many times this meal is being made
+            scaledQty = scaledQty * timesToMake;
           }
 
           const key = `${ing.category}|${ing.ingredient}|${ing.unit || ''}`;
