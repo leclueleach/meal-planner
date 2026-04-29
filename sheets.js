@@ -6,13 +6,11 @@ const Sheets = (() => {
 
   const BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
 
-  // Generic fetch from a named range/tab
   async function fetchRange(tabName, range) {
     const token = Auth.getToken();
     if (!token) throw new Error('Not authenticated');
 
     const url = `${BASE_URL}/${CONFIG.SHEET_ID}/values/${encodeURIComponent(tabName + '!' + range)}?key=${CONFIG.API_KEY}`;
-
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -27,9 +25,6 @@ const Sheets = (() => {
   }
 
   // ── People Tab ──────────────────────────────────────────
-  // Expected columns:
-  // A: Include (TRUE/FALSE)  B: Name  C: Protein (g)  D: Carbs (cups)
-  // E: Fat (tsp EVOO)  F: Veg (cups)  G: Notes/Allergies
   async function getPeople() {
     const rows = await fetchRange(CONFIG.TABS.PEOPLE, 'A2:G50');
     return rows
@@ -46,114 +41,112 @@ const Sheets = (() => {
       }));
   }
 
-  // ── Recipes Tab ─────────────────────────────────────────
-  // Expected columns:
-  // A: Include (TRUE/FALSE)  B: Meal Name  C: Category  D: Ingredient
-  // E: Qty (per 1 protein serving)  F: Unit  G: Notes
-  // Rows with the same Meal Name are grouped together.
-  async function getRecipes() {
-    const rows = await fetchRange(CONFIG.TABS.RECIPES, 'A2:G300');
-
+  // ── Meal Tab (Breakfast / Lunch / Dinner) ────────────────
+  // Columns: Include, Meal Name, Category, Person, Ingredient, Qty, Unit, Notes
+  async function getMeals(tabName) {
+    const rows = await fetchRange(tabName, 'A2:H300');
     const mealsMap = {};
     const mealOrder = [];
 
     rows.forEach((r) => {
-      if (r.length < 4) return;
-      const include = (r[0] || '').toUpperCase() === 'TRUE';
+      if (r.length < 5) return;
+      const include  = (r[0] || '').toUpperCase() === 'TRUE';
       const mealName = (r[1] || '').trim();
       const category = (r[2] || 'Other').trim();
-      const ingredient = (r[3] || '').trim();
-      const qty = r[4] !== undefined && r[4] !== '' ? parseFloat(r[4]) : null;
-      const unit = (r[5] || '').trim() || null;
-      const notes = (r[6] || '').trim();
+      const person   = (r[3] || 'Both').trim(); // Le Clue / Partner / Both
+      const ingredient = (r[4] || '').trim();
+      const qty      = r[5] !== undefined && r[5] !== '' ? parseFloat(r[5]) : null;
+      const unit     = (r[6] || '').trim() || null;
+      const notes    = (r[7] || '').trim();
 
       if (!mealName || !ingredient) return;
 
       if (!mealsMap[mealName]) {
-        mealsMap[mealName] = {
-          name: mealName,
-          include,
-          ingredients: [],
-        };
+        mealsMap[mealName] = { name: mealName, include, person, ingredients: [] };
         mealOrder.push(mealName);
       }
 
-      mealsMap[mealName].ingredients.push({ category, ingredient, qty, unit, notes });
+      mealsMap[mealName].ingredients.push({ category, person, ingredient, qty, unit, notes });
     });
 
     return mealOrder.map(name => mealsMap[name]);
   }
 
   // ── Build Shopping List ──────────────────────────────────
-  // Combines selected meals × selected people into a flat ingredient list,
-  // grouped by category. Protein quantities scale per person profile.
-  function buildShoppingList(people, recipes, mealServings = {}) {
+  // Takes meals from all 3 meal types, scales by servings and person profile
+  function buildShoppingList(people, allMeals, mealServings = {}) {
     const selectedPeople = people.filter(p => p.include);
-    const selectedMeals = recipes.filter(r => r.include);
-
-    if (!selectedPeople.length || !selectedMeals.length) return [];
+    if (!selectedPeople.length) return [];
 
     const agg = {};
 
-    selectedMeals.forEach(meal => {
-      const timesToMake = mealServings[meal.name] || 1;
-      meal.ingredients.forEach(ing => {
-        const isProtein = ing.category === 'Proteins';
-        const isCarb = ing.category === 'Carbs (Week 1)';
+    Object.entries(allMeals).forEach(([mealType, meals]) => {
+      const selectedMeals = meals.filter(r => r.include);
 
-        selectedPeople.forEach(person => {
-          let scaledQty = ing.qty;
-          if (scaledQty !== null) {
-            if (isProtein) {
-              scaledQty = (ing.qty / 120) * person.protein_g;
-            } else if (isCarb) {
-              scaledQty = ing.qty * person.carbs_cups;
+      selectedMeals.forEach(meal => {
+        const timesToMake = mealServings[meal.name] || 1;
+
+        meal.ingredients.forEach(ing => {
+          const isProtein = ing.category === 'Proteins';
+          const isCarb    = ing.category.startsWith('Carbs');
+
+          // Determine which people this ingredient applies to
+          const applicablePeople = selectedPeople.filter(p => {
+            if (ing.person === 'Both' || meal.person === 'Both') return true;
+            return p.name === ing.person || p.name === meal.person;
+          });
+
+          applicablePeople.forEach(person => {
+            let scaledQty = ing.qty;
+            if (scaledQty !== null) {
+              if (isProtein) scaledQty = (ing.qty / 120) * person.protein_g;
+              else if (isCarb) scaledQty = ing.qty * person.carbs_cups;
+              scaledQty = scaledQty * timesToMake;
             }
-            // Multiply by how many times this meal is being made
-            scaledQty = scaledQty * timesToMake;
-          }
 
-          const key = `${ing.category}|${ing.ingredient}|${ing.unit || ''}`;
-          if (!agg[key]) {
-            agg[key] = {
-              category: ing.category,
-              name: ing.ingredient,
-              unit: ing.unit,
-              qty: 0,
-              hasQty: false,
-              meals: new Set(),
-              notes: ing.notes,
-            };
-          }
-          if (scaledQty !== null) {
-            agg[key].qty += scaledQty;
-            agg[key].hasQty = true;
-          }
-          agg[key].meals.add(meal.name);
+            const key = `${ing.category}|${ing.ingredient}|${ing.unit || ''}`;
+            if (!agg[key]) {
+              agg[key] = {
+                category: ing.category,
+                name: ing.ingredient,
+                unit: ing.unit,
+                qty: 0,
+                hasQty: false,
+                meals: new Set(),
+                mealType,
+                notes: ing.notes,
+                people: new Set(),
+              };
+            }
+            if (scaledQty !== null) {
+              agg[key].qty += scaledQty;
+              agg[key].hasQty = true;
+            }
+            agg[key].meals.add(meal.name);
+            agg[key].people.add(person.name);
+          });
         });
       });
     });
 
-    // Convert to array, group by category
-    const items = Object.values(agg).map(item => ({
-      ...item,
-      meals: [...item.meals],
-      qty: Math.round(item.qty * 10) / 10,
-    }));
+    const catOrder = ['Proteins', 'Fresh Produce', 'Canned & Jarred', 'Stocks & Liquids', 'Pantry & Spices', 'Fats', 'Veg', 'Veg/Fruit', 'Carbs', 'Carbs (Week 1)'];
 
-    // Sort by category then name
-    const catOrder = ['Proteins', 'Fresh Produce', 'Canned & Jarred', 'Stocks & Liquids', 'Pantry & Spices', 'Carbs (Week 1)'];
-    items.sort((a, b) => {
-      const ai = catOrder.indexOf(a.category);
-      const bi = catOrder.indexOf(b.category);
-      const ca = ai === -1 ? 99 : ai;
-      const cb = bi === -1 ? 99 : bi;
-      if (ca !== cb) return ca - cb;
-      return a.name.localeCompare(b.name);
-    });
-
-    return items;
+    return Object.values(agg)
+      .map(item => ({
+        ...item,
+        meals: [...item.meals],
+        people: [...item.people],
+        qty: Math.round(item.qty * 10) / 10,
+      }))
+      .sort((a, b) => {
+        const ai = catOrder.findIndex(c => a.category.startsWith(c.split(' ')[0]));
+        const bi = catOrder.findIndex(c => b.category.startsWith(c.split(' ')[0]));
+        const ca = ai === -1 ? 99 : ai;
+        const cb = bi === -1 ? 99 : bi;
+        if (ca !== cb) return ca - cb;
+        return a.name.localeCompare(b.name);
+      });
   }
 
-  return { getPeople, getRecipes, buildShoppingList };
+  return { getPeople, getMeals, buildShoppingList };
 })();
