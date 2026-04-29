@@ -114,7 +114,6 @@ const Planner = (() => {
               <div class="day-chip ${enabled ? 'enabled' : ''} ${today ? 'today' : ''}"
                    onclick="Planner.toggleDay('${key}')">
                 <div class="day-chip-name">${DAY_SHORT[i]}</div>
-                <div class="day-chip-num">${d.getDate()}</div>
                 <div class="day-chip-check">${enabled ? '✓' : ''}</div>
               </div>`;
           }).join('')}
