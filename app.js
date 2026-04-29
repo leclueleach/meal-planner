@@ -96,7 +96,9 @@ const App = (() => {
     document.querySelectorAll('.section-tab').forEach(t => t.classList.toggle('active', t.dataset.section === section));
     document.getElementById('shopping-section').style.display = section === 'shopping' ? 'flex' : 'none';
     document.getElementById('recipes-section').style.display  = section === 'recipes'  ? 'flex' : 'none';
+    document.getElementById('planner-section').style.display  = section === 'planner'  ? 'flex' : 'none';
     if (section === 'recipes') renderRecipesSection();
+    if (section === 'planner') PlannerSection.refresh();
   }
 
   function switchTab(tab) {
