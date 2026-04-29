@@ -32,7 +32,6 @@
 <!-- ── App ───────────────────────────────────────────────── -->
 <div id="screen-app">
 
-  <!-- Section switcher (Shopping / Recipes) -->
   <div class="section-switcher">
     <button class="section-tab active" data-section="shopping">🛒 Shopping</button>
     <button class="section-tab" data-section="recipes">📖 Recipes</button>
@@ -40,8 +39,6 @@
 
   <!-- ══ SHOPPING SECTION ══════════════════════════════════ -->
   <div id="shopping-section">
-
-    <!-- Top nav tabs -->
     <div class="top-nav">
       <button class="nav-tab active" data-tab="breakfast">
         <span class="nav-icon">🌅</span><span class="nav-label">Breakfast</span>
@@ -59,9 +56,11 @@
         <span class="nav-icon">📋</span><span class="nav-label">List</span>
         <span class="nav-badge" id="badge-list" style="display:none">0</span>
       </button>
+      <button class="nav-tab" data-tab="macros">
+        <span class="nav-icon">📊</span><span class="nav-label">Macros</span>
+      </button>
     </div>
 
-    <!-- Actions bar -->
     <div class="actions-bar">
       <div id="header-actions-meals" style="display:flex;gap:6px">
         <button id="btn-refresh" class="btn btn-ghost btn-sm">Refresh</button>
@@ -73,7 +72,6 @@
       </div>
     </div>
 
-    <!-- Main content -->
     <main class="app-main">
       <div id="screen-meals">
         <div id="person-filter" class="person-filter"></div>
@@ -86,48 +84,30 @@
         </div>
         <div id="shopping-list"></div>
       </div>
+      <div id="screen-macros" style="display:none"></div>
     </main>
-
   </div>
 
   <!-- ══ RECIPES SECTION ═══════════════════════════════════ -->
   <div id="recipes-section" style="display:none">
-
-    <!-- Recipes top nav -->
     <div class="top-nav">
-      <button class="rec-tab active" data-tab="breakfast">
-        <span class="nav-icon">🌅</span><span class="nav-label">Breakfast</span>
-      </button>
-      <button class="rec-tab" data-tab="lunch">
-        <span class="nav-icon">🥗</span><span class="nav-label">Lunch</span>
-      </button>
-      <button class="rec-tab" data-tab="dinner">
-        <span class="nav-icon">🍲</span><span class="nav-label">Dinner</span>
-      </button>
+      <button class="rec-tab active" data-tab="breakfast"><span class="nav-icon">🌅</span><span class="nav-label">Breakfast</span></button>
+      <button class="rec-tab" data-tab="lunch"><span class="nav-icon">🥗</span><span class="nav-label">Lunch</span></button>
+      <button class="rec-tab" data-tab="dinner"><span class="nav-icon">🍲</span><span class="nav-label">Dinner</span></button>
     </div>
-
-    <!-- Actions bar -->
     <div class="actions-bar">
       <div style="display:flex;gap:6px">
         <button id="btn-refresh-r" class="btn btn-ghost btn-sm">Refresh</button>
         <button id="btn-signout-r" class="btn btn-ghost btn-sm">Sign out</button>
       </div>
     </div>
-
-    <!-- Recipes main -->
     <main class="app-main">
-
-      <!-- Meal list view -->
       <div id="recipes-meal-list-wrap">
         <div id="recipe-person-filter" class="person-filter"></div>
         <div id="recipes-meal-list" class="meal-list"></div>
       </div>
-
-      <!-- Cook mode view -->
       <div id="cook-mode" style="display:none"></div>
-
     </main>
-
   </div>
 
 </div>
