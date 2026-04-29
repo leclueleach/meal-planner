@@ -6,7 +6,7 @@
 const CONFIG = {
   // From Google Cloud Console → APIs & Services → Credentials
   // OAuth 2.0 Client ID (Web application type)
-  GOOGLE_CLIENT_ID: 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com',
+  GOOGLE_CLIENT_ID: '576328640545-761lh2uam1k19snquin9dida5cvenkgj.apps.googleusercontent.com',
 
   // Your Google Sheet ID
   // Found in the Sheet URL: docs.google.com/spreadsheets/d/SHEET_ID/edit
