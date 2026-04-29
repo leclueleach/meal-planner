@@ -234,10 +234,10 @@ body {
 .panel-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   padding: 10px 14px;
   border-top: 1px solid var(--border);
-  cursor: pointer;
   transition: background 0.12s;
 }
 .panel-item:first-child { border-top: none; }
@@ -267,11 +267,44 @@ body {
 .panel-name { font-size: 0.85rem; color: var(--text); }
 .panel-sub { font-size: 0.68rem; color: var(--text-muted); }
 
-.panel-empty {
-  padding: 16px 14px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-style: italic;
+.panel-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.meal-servings {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.srv-btn {
+  background: var(--border);
+  border: none;
+  color: var(--text);
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  line-height: 1;
+}
+.srv-btn:hover { background: var(--accent); color: var(--bg); }
+
+.srv-count {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85rem;
+  color: var(--accent);
+  min-width: 22px;
+  text-align: center;
 }
 
 /* ── Divider ── */
