@@ -27,5 +27,5 @@ const CONFIG = {
 
   // Your GitHub Pages URL (update after deploying)
   // e.g. 'https://yourusername.github.io/meal-planner'
-  REDIRECT_URI: 'http://localhost:5500', // Change to your GitHub Pages URL after deploy
+  REDIRECT_URI: 'https://leclueleach.github.io/meal-planner', 
 };
