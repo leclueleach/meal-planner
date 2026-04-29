@@ -10,11 +10,11 @@ const CONFIG = {
 
   // Your Google Sheet ID
   // Found in the Sheet URL: docs.google.com/spreadsheets/d/SHEET_ID/edit
-  SHEET_ID: 'YOUR_SHEET_ID_HERE',
+  SHEET_ID: '1PsvzMbDC5J4X30BJk_N95kpSyVhaBrLNp_wy4cZMm_U',
 
   // Google Sheets API Key
   // From Google Cloud Console → APIs & Services → Credentials → API Key
-  API_KEY: 'YOUR_API_KEY_HERE',
+  API_KEY: 'AIzaSyAxl3OYUuRXEkRK8kjQCg3WMn-6VrpN4zY',
 
   // Sheet tab names — must match exactly what you named them in Google Sheets
   TABS: {
