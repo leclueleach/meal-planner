@@ -186,10 +186,10 @@ const Planner = (() => {
         return '<div class="day-macro-person">' +
           '<div class="day-macro-name">' + person.name + '</div>' +
           '<div class="day-macro-stats">' +
-            '<span style="color:#aaff4d">' + m.kcal + '<span class="day-macro-target">/' + t.kcal + '</span> kcal</span>' +
-            '<span style="color:#6aafd4">' + m.protein + '<span class="day-macro-target">/' + t.protein + '</span>g</span>' +
-            '<span style="color:#f0c040">' + m.carbs + '<span class="day-macro-target">/' + t.carbs + '</span>g</span>' +
-            '<span style="color:#b990cc">' + m.fat + '<span class="day-macro-target">/' + t.fat + '</span>g</span>' +
+            '<span style="color:#aaff4d">🔥 ' + m.kcal + '<span class="day-macro-target">/' + t.kcal + '</span> kcal</span>' +
+            '<span style="color:#6aafd4">🥩 ' + m.protein + '<span class="day-macro-target">/' + t.protein + '</span>g</span>' +
+            '<span style="color:#f0c040">🌾 ' + m.carbs + '<span class="day-macro-target">/' + t.carbs + '</span>g</span>' +
+            '<span style="color:#b990cc">🫒 ' + m.fat + '<span class="day-macro-target">/' + t.fat + '</span>g</span>' +
           '</div>' +
         '</div>';
       }).join('') +
