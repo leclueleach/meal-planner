@@ -21,7 +21,7 @@ const Sheets = (() => {
 
   // ── People ───────────────────────────────────────────────
   async function getPeople() {
-    const rows = await fetchRange(CONFIG.TABS.PEOPLE, 'A2:G50');
+    const rows = await fetchRange(CONFIG.TABS.PEOPLE, 'A2:K50');
     return rows.filter(r => r.length >= 2).map((r, idx) => ({
       id: idx,
       include: (r[0] || '').toUpperCase() === 'TRUE',
@@ -31,10 +31,10 @@ const Sheets = (() => {
       fat_tsp:    parseFloat(r[4]) || 0,
       veg_cups:   parseFloat(r[5]) || 0,
       notes: r[6] || '',
-      target_kcal:    parseFloat(r[7]) || 1800,
-      target_protein: parseFloat(r[8]) || 120,
-      target_carbs:   parseFloat(r[9]) || 180,
-      target_fat:     parseFloat(r[10]) || 60,
+      target_kcal:    parseFloat(r[7]) || 0,
+      target_protein: parseFloat(r[8]) || 0,
+      target_carbs:   parseFloat(r[9]) || 0,
+      target_fat:     parseFloat(r[10]) || 0,
     }));
   }
 
