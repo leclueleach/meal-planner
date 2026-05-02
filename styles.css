@@ -16,6 +16,7 @@
   --accent-text:  #0a0a0a;
   --text:         #f0f0f0;
   --text-muted:   #444444;
+  --text-nav:     #f0f0f0;
   --text-mid:     #666666;
   --checked-bg:   #111111;
   --checked-text: #333333;
@@ -206,7 +207,7 @@ html, body {
 }
 .nav-icon { font-size: 1.1rem; opacity: 0.3; transition: opacity 0.15s; }
 .nav-tab.active .nav-icon, .rec-tab.active .nav-icon { opacity: 1; }
-.nav-label { font-size: 0.62rem; color: var(--text-muted); letter-spacing: 0.04em; transition: color 0.15s; }
+.nav-label { font-size: 0.62rem; color: #f0f0f0; letter-spacing: 0.04em; transition: color 0.15s; }
 .nav-tab.active .nav-label, .rec-tab.active .nav-label { color: var(--accent); }
 
 .nav-badge {
