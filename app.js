@@ -21,6 +21,8 @@ const App = (() => {
     activeMeal: null,
     cookFor: 'Both',      // Le Clue | Partner | Both
     activeTimer: null,
+    timerPaused: false,
+    completedSteps: {},   // { stepIdx: true }
     loading: false,
     error: null,
     signedIn: false,
@@ -210,7 +212,7 @@ const App = (() => {
   function clearChecked() { state.checked = {}; saveChecked(); renderList(); renderProgress(); }
 
   // ── Cook mode ─────────────────────────────────────────────
-  function openMeal(mealName) { state.activeMeal = mealName; stopTimer(); renderCookMode(); }
+  function openMeal(mealName) { state.activeMeal = mealName; state.completedSteps = {}; stopTimer(); renderCookMode(); }
   function closeMeal() { state.activeMeal = null; stopTimer(); renderRecipesMealList(); document.getElementById('cook-mode').style.display = 'none'; document.getElementById('recipes-meal-list-wrap').style.display = 'block'; }
 
   function setCookFor(who) {
@@ -221,26 +223,66 @@ const App = (() => {
 
   function startTimer(stepIdx, seconds) {
     stopTimer();
+    state.timerPaused = false;
     state.activeTimer = { stepIdx, remaining: seconds };
     updateTimerDisplay(stepIdx, seconds);
+    updateTimerButtons(stepIdx, 'running');
     state.activeTimer.interval = setInterval(() => {
+      if (state.timerPaused) return;
       state.activeTimer.remaining--;
       updateTimerDisplay(stepIdx, state.activeTimer.remaining);
       if (state.activeTimer.remaining <= 0) {
         stopTimer();
-        const btn = document.getElementById(`timer-btn-${stepIdx}`);
-        if (btn) { btn.textContent = '✓ Done'; btn.classList.add('timer-done'); }
+        updateTimerButtons(stepIdx, 'done');
         if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
         playBeep();
       }
     }, 1000);
   }
 
-  function stopTimer() { if (state.activeTimer?.interval) clearInterval(state.activeTimer.interval); state.activeTimer = null; }
+  function pauseTimer(stepIdx) {
+    if (!state.activeTimer || state.activeTimer.stepIdx !== stepIdx) return;
+    state.timerPaused = !state.timerPaused;
+    updateTimerButtons(stepIdx, state.timerPaused ? 'paused' : 'running');
+  }
+
+  function stopTimer() {
+    if (state.activeTimer?.interval) clearInterval(state.activeTimer.interval);
+    state.activeTimer = null;
+    state.timerPaused = false;
+  }
 
   function updateTimerDisplay(stepIdx, remaining) {
-    const el = document.getElementById(`timer-display-${stepIdx}`);
-    if (el) { const m = Math.floor(remaining / 60); const s = remaining % 60; el.textContent = `${m}:${String(s).padStart(2, '0')}`; }
+    const el = document.getElementById('timer-display-' + stepIdx);
+    if (el) {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      el.textContent = m + ':' + String(s).padStart(2, '0');
+    }
+  }
+
+  function updateTimerButtons(stepIdx, status) {
+    const startBtn = document.getElementById('timer-btn-' + stepIdx);
+    const pauseBtn = document.getElementById('timer-pause-' + stepIdx);
+    if (status === 'running') {
+      if (startBtn) { startBtn.textContent = 'Running'; startBtn.disabled = true; startBtn.classList.remove('timer-done'); }
+      if (pauseBtn) { pauseBtn.style.display = 'inline-block'; pauseBtn.textContent = 'Pause'; }
+    } else if (status === 'paused') {
+      if (startBtn) { startBtn.textContent = 'Paused'; }
+      if (pauseBtn) { pauseBtn.textContent = 'Resume'; }
+    } else if (status === 'done') {
+      if (startBtn) { startBtn.textContent = '✓ Done'; startBtn.classList.add('timer-done'); startBtn.disabled = false; }
+      if (pauseBtn) { pauseBtn.style.display = 'none'; }
+    }
+  }
+
+  function toggleStepComplete(stepIdx) {
+    state.completedSteps[stepIdx] = !state.completedSteps[stepIdx];
+    const stepEl = document.getElementById('cook-step-' + stepIdx);
+    const checkEl = document.getElementById('step-check-' + stepIdx);
+    if (stepEl) stepEl.classList.toggle('step-done', !!state.completedSteps[stepIdx]);
+    if (checkEl) checkEl.classList.toggle('checked', !!state.completedSteps[stepIdx]);
+    if (checkEl) checkEl.textContent = state.completedSteps[stepIdx] ? '✓' : '';
   }
 
   // ── Rendering ─────────────────────────────────────────────
@@ -567,17 +609,23 @@ const App = (() => {
       const s = step.timer % 60;
       const timerLabel = s > 0 ? (m + 'm ' + s + 's') : (m + ' min');
       const timerHtml = hasTimer
-        ? '<div class="step-timer"><span class="timer-label">&#9201; ' + timerLabel + '</span>' +
-          '<span class="timer-display" id="timer-display-' + idx + '">' + String(m).padStart(1,'0') + ':' + String(step.timer % 60).padStart(2,'0') + '</span>' +
-          '<button class="timer-btn" id="timer-btn-' + idx + '" onclick="App.startTimer(' + idx + ', ' + step.timer + ')">Start</button></div>'
+        ? '<div class="step-timer">' +
+            '<span class="timer-label">&#9201; ' + timerLabel + '</span>' +
+            '<span class="timer-display" id="timer-display-' + idx + '">' + String(m).padStart(1,'0') + ':' + String(step.timer % 60).padStart(2,'0') + '</span>' +
+            '<button class="timer-btn" id="timer-btn-' + idx + '" onclick="App.startTimer(' + idx + ', ' + step.timer + ')">Start</button>' +
+            '<button class="timer-pause-btn" id="timer-pause-' + idx + '" onclick="App.pauseTimer(' + idx + ')" style="display:none">Pause</button>' +
+          '</div>'
         : '';
-      html += '<div class="cook-step" id="cook-step-' + idx + '">' +
+      const isDone = !!state.completedSteps[idx];
+      html += '<div class="cook-step ' + (isDone ? 'step-done' : '') + '" id="cook-step-' + idx + '">' +
         '<div class="step-num">' + step.stepNum + '</div>' +
         '<div class="step-body">' +
           '<div class="step-title">' + step.stepTitle + '</div>' +
           '<div class="step-instruction">' + step.instruction + '</div>' +
           timerHtml +
-        '</div></div>';
+        '</div>' +
+        '<div class="step-check ' + (isDone ? 'checked' : '') + '" id="step-check-' + idx + '" onclick="App.toggleStepComplete(' + idx + ')">' + (isDone ? '&#10003;' : '') + '</div>' +
+      '</div>';
     });
     html += '</div>';
     cookEl.innerHTML = html;
@@ -619,7 +667,9 @@ const App = (() => {
     let html = '<div class="cook-ingredients"><div class="cook-section-title">&#129518; Ingredients <span class="cook-for-tag">' + forLabel + ' &middot; ' + servings + '&times;</span></div>';
     items.forEach(ing => {
       const qtyStr = ing.hasQty ? '<span class="ing-qty">' + (Math.round(ing.qty * 10) / 10) + (ing.unit ? ' ' + ing.unit : '') + '</span>' : '';
-      html += '<div class="ing-row">' + qtyStr + '<span class="ing-name">' + ing.ingredient + '</span>' + (ing.notes ? '<span class="ing-note">' + ing.notes + '</span>' : '') + '</div>';
+      // Don't show per-person protein notes when cooking for multiple people
+      const showNote = ing.notes && !(ing.category === 'Proteins' && cookFor === 'Both');
+      html += '<div class="ing-row">' + qtyStr + '<span class="ing-name">' + ing.ingredient + '</span>' + (showNote ? '<span class="ing-note">' + ing.notes + '</span>' : '') + '</div>';
     });
     html += '</div>';
     wrap.innerHTML = html;
@@ -646,7 +696,7 @@ const App = (() => {
     if (msg) { el.textContent = msg; el.style.display = 'block'; } else el.style.display = 'none';
   }
 
-  return { init, toggleMeal, changeMealServings, toggleItem, setPersonFilter, setRecipePersonFilter, openMeal, closeMeal, startTimer, changeCookServings, setCookFor };
+  return { init, toggleMeal, changeMealServings, toggleItem, setPersonFilter, setRecipePersonFilter, openMeal, closeMeal, startTimer, pauseTimer, toggleStepComplete, changeCookServings, setCookFor };
 })();
 
 function onGisLoad() { App.init(); }
