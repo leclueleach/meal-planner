@@ -125,8 +125,8 @@ html, body {
 .btn-primary:hover { background: #bbff66; }
 .btn-ghost {
   background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  border: 1px solid #f0f0f0;
+  color: #f0f0f0;
 }
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
 .btn-sm { padding: 5px 10px; font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; }
@@ -205,7 +205,7 @@ html, body {
   background: var(--accent);
   border-radius: 2px 2px 0 0;
 }
-.nav-icon { font-size: 1.1rem; opacity: 0.3; transition: opacity 0.15s; }
+.nav-icon { font-size: 1.1rem; opacity: 1; transition: opacity 0.15s; }
 .nav-tab.active .nav-icon, .rec-tab.active .nav-icon { opacity: 1; }
 .nav-label { font-size: 0.62rem; color: #f0f0f0; letter-spacing: 0.04em; transition: color 0.15s; }
 .nav-tab.active .nav-label, .rec-tab.active .nav-label { color: var(--accent); }
