@@ -953,3 +953,62 @@ html, body {
   vertical-align: middle;
   font-weight: 500;
 }
+
+/* ── Step complete & pause ── */
+.cook-step {
+  position: relative;
+  transition: opacity 0.2s;
+}
+
+.cook-step.step-done {
+  opacity: 0.45;
+}
+
+.cook-step.step-done .step-num {
+  background: var(--surface2);
+  color: var(--text-muted);
+}
+
+.step-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--border2);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-text);
+  transition: all 0.15s;
+  flex-shrink: 0;
+  background: var(--bg);
+}
+
+.step-check.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.timer-pause-btn {
+  background: var(--surface2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+  letter-spacing: 0.03em;
+}
+
+.timer-pause-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
