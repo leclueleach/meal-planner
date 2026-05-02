@@ -19,6 +19,7 @@ const App = (() => {
     personFilter: 'All',
     recipePersonFilter: 'All',
     activeMeal: null,
+    cookFor: 'Both',      // Le Clue | Partner | Both
     activeTimer: null,
     loading: false,
     error: null,
@@ -211,6 +212,12 @@ const App = (() => {
   // ── Cook mode ─────────────────────────────────────────────
   function openMeal(mealName) { state.activeMeal = mealName; stopTimer(); renderCookMode(); }
   function closeMeal() { state.activeMeal = null; stopTimer(); renderRecipesMealList(); document.getElementById('cook-mode').style.display = 'none'; document.getElementById('recipes-meal-list-wrap').style.display = 'block'; }
+
+  function setCookFor(who) {
+    state.cookFor = who;
+    document.querySelectorAll('.cook-for-btn').forEach(b => b.classList.toggle('active', b.dataset.who === who));
+    renderCookIngredients();
+  }
 
   function startTimer(stepIdx, seconds) {
     stopTimer();
@@ -527,55 +534,102 @@ const App = (() => {
     cookEl.style.display = 'block';
     const mealName = state.activeMeal;
     const mealData = state.cookingSteps[mealName];
-    const mealInfo = [...state.meals.breakfast, ...state.meals.lunch, ...state.meals.dinner].find(m => m.name === mealName);
-    if (!mealData) { cookEl.innerHTML = `<div class="list-empty">No steps found for this meal.</div>`; return; }
+    if (!mealData) { cookEl.innerHTML = '<div class="list-empty">No steps found for this meal.</div>'; return; }
     const servings = state.mealServings[mealName] || 1;
-    cookEl.innerHTML = `
-      <div class="cook-header">
-        <button class="back-btn" onclick="App.closeMeal()">‹ Back</button>
-        <div class="cook-title">${mealName}</div>
-        <div class="cook-servings">
-          <button class="srv-btn" onclick="App.changeCookServings('${mealName.replace(/'/g,"\\'")}', -1)">−</button>
-          <span class="srv-count">${servings}×</span>
-          <button class="srv-btn" onclick="App.changeCookServings('${mealName.replace(/'/g,"\\'")}', 1)">+</button>
-        </div>
-      </div>
-      <div class="cook-ingredients">
-        <div class="cook-section-title">🧾 Ingredients</div>
-        ${mealInfo ? mealInfo.ingredients.map(ing => {
-          const qty = ing.qty !== null ? `<span class="ing-qty">${Math.round(ing.qty * servings * 10) / 10}${ing.unit ? ' ' + ing.unit : ''}</span>` : '';
-          return `<div class="ing-row">${qty}<span class="ing-name">${ing.ingredient}</span>${ing.notes ? `<span class="ing-note">${ing.notes}</span>` : ''}</div>`;
-        }).join('') : ''}
-      </div>
-      <div class="cook-steps">
-        <div class="cook-section-title">👨‍🍳 Steps</div>
-        ${mealData.steps.map((step, idx) => {
-          const hasTimer = step.timer > 0;
-          const m = Math.floor(step.timer / 60);
-          const s = step.timer % 60;
-          const timerLabel = s > 0 ? `${m}m ${s}s` : `${m} min`;
-          return `
-            <div class="cook-step" id="cook-step-${idx}">
-              <div class="step-num">${step.stepNum}</div>
-              <div class="step-body">
-                <div class="step-title">${step.stepTitle}</div>
-                <div class="step-instruction">${step.instruction}</div>
-                ${hasTimer ? `
-                <div class="step-timer">
-                  <span class="timer-label">⏱ ${timerLabel}</span>
-                  <span class="timer-display" id="timer-display-${idx}">${String(m).padStart(1,'0')}:${String(step.timer % 60).padStart(2,'0')}</span>
-                  <button class="timer-btn" id="timer-btn-${idx}" onclick="App.startTimer(${idx}, ${step.timer})">Start</button>
-                </div>` : ''}
-              </div>
-            </div>`;
-        }).join('')}
-      </div>`;
+    const safeName = mealName.replace(/'/g, "\\'");
+    const people   = state.people.filter(p => p.include);
+
+    let html = '<div class="cook-header">' +
+      '<button class="back-btn" onclick="App.closeMeal()">&#8249; Back</button>' +
+      '<div class="cook-title">' + mealName + '</div>' +
+      '<div class="cook-servings">' +
+        '<button class="srv-btn" onclick="App.changeCookServings(\'' + safeName + '\', -1)">&#8722;</button>' +
+        '<span class="srv-count">' + servings + '&times;</span>' +
+        '<button class="srv-btn" onclick="App.changeCookServings(\'' + safeName + '\', 1)">+</button>' +
+      '</div></div>';
+
+    html += '<div class="cook-for-bar"><span class="cook-for-label">Cook for:</span>';
+    people.forEach(p => {
+      const active = state.cookFor === p.name ? 'active' : '';
+      html += '<button class="cook-for-btn ' + active + '" data-who="' + p.name + '" onclick="App.setCookFor(\'' + p.name.replace(/'/g, "\\'") + '\')">' + p.name + '</button>';
+    });
+    if (people.length > 1) {
+      const active = state.cookFor === 'Both' ? 'active' : '';
+      html += '<button class="cook-for-btn ' + active + '" data-who="Both" onclick="App.setCookFor(\'Both\')">Both</button>';
+    }
+    html += '</div>';
+    html += '<div id="cook-ingredients-wrap"></div>';
+    html += '<div class="cook-steps"><div class="cook-section-title">&#128104;&#8205;&#127859; Steps</div>';
+
+    mealData.steps.forEach((step, idx) => {
+      const hasTimer = step.timer > 0;
+      const m = Math.floor(step.timer / 60);
+      const s = step.timer % 60;
+      const timerLabel = s > 0 ? (m + 'm ' + s + 's') : (m + ' min');
+      const timerHtml = hasTimer
+        ? '<div class="step-timer"><span class="timer-label">&#9201; ' + timerLabel + '</span>' +
+          '<span class="timer-display" id="timer-display-' + idx + '">' + String(m).padStart(1,'0') + ':' + String(step.timer % 60).padStart(2,'0') + '</span>' +
+          '<button class="timer-btn" id="timer-btn-' + idx + '" onclick="App.startTimer(' + idx + ', ' + step.timer + ')">Start</button></div>'
+        : '';
+      html += '<div class="cook-step" id="cook-step-' + idx + '">' +
+        '<div class="step-num">' + step.stepNum + '</div>' +
+        '<div class="step-body">' +
+          '<div class="step-title">' + step.stepTitle + '</div>' +
+          '<div class="step-instruction">' + step.instruction + '</div>' +
+          timerHtml +
+        '</div></div>';
+    });
+    html += '</div>';
+    cookEl.innerHTML = html;
+    renderCookIngredients();
+  }
+
+  function renderCookIngredients() {
+    const wrap = document.getElementById('cook-ingredients-wrap');
+    if (!wrap) return;
+    const mealName = state.activeMeal;
+    const mealInfo = [...state.meals.breakfast, ...state.meals.lunch, ...state.meals.dinner].find(m => m.name === mealName);
+    const servings  = state.mealServings[mealName] || 1;
+    const cookFor   = state.cookFor;
+    const people    = state.people.filter(p => p.include);
+    if (!mealInfo) { wrap.innerHTML = ''; return; }
+
+    const targets = cookFor === 'Both' ? people : people.filter(p => p.name === cookFor);
+    const agg = {};
+
+    mealInfo.ingredients.forEach(ing => {
+      targets.forEach(person => {
+        const applies = ing.person === 'Both' || mealInfo.person === 'Both' ||
+                        ing.person === person.name || mealInfo.person === person.name;
+        if (!applies) return;
+        let qty = ing.qty;
+        if (qty !== null) {
+          if (ing.category === 'Proteins')           qty = (qty / 120) * person.protein_g;
+          else if (ing.category.startsWith('Carbs')) qty = qty * person.carbs_cups;
+          qty = qty * servings;
+        }
+        const key = ing.ingredient + '|' + (ing.unit || '');
+        if (!agg[key]) agg[key] = { ingredient: ing.ingredient, unit: ing.unit, qty: 0, hasQty: qty !== null, notes: ing.notes };
+        if (qty !== null) agg[key].qty += qty;
+      });
+    });
+
+    const items = Object.values(agg);
+    const forLabel = cookFor === 'Both' ? 'Both' : cookFor;
+    let html = '<div class="cook-ingredients"><div class="cook-section-title">&#129518; Ingredients <span class="cook-for-tag">' + forLabel + ' &middot; ' + servings + '&times;</span></div>';
+    items.forEach(ing => {
+      const qtyStr = ing.hasQty ? '<span class="ing-qty">' + (Math.round(ing.qty * 10) / 10) + (ing.unit ? ' ' + ing.unit : '') + '</span>' : '';
+      html += '<div class="ing-row">' + qtyStr + '<span class="ing-name">' + ing.ingredient + '</span>' + (ing.notes ? '<span class="ing-note">' + ing.notes + '</span>' : '') + '</div>';
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
   }
 
   function changeCookServings(mealName, delta) {
     state.mealServings[mealName] = Math.max(1, (state.mealServings[mealName] || 1) + delta);
     renderCookMode();
   }
+
 
   // ── Helpers ───────────────────────────────────────────────
   function itemKey(item) { return `${item.category}|${item.name}|${item.unit || ''}`; }
@@ -592,7 +646,7 @@ const App = (() => {
     if (msg) { el.textContent = msg; el.style.display = 'block'; } else el.style.display = 'none';
   }
 
-  return { init, toggleMeal, changeMealServings, toggleItem, setPersonFilter, setRecipePersonFilter, openMeal, closeMeal, startTimer, changeCookServings };
+  return { init, toggleMeal, changeMealServings, toggleItem, setPersonFilter, setRecipePersonFilter, openMeal, closeMeal, startTimer, changeCookServings, setCookFor };
 })();
 
 function onGisLoad() { App.init(); }
