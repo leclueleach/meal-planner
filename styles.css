@@ -1013,3 +1013,40 @@ html, body {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ── Stub empty tabs ── */
+.stub-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 30px;
+  text-align: center;
+  gap: 10px;
+}
+.stub-icon  { font-size: 2.5rem; }
+.stub-title { font-size: 1rem; color: var(--text); font-weight: 500; }
+.stub-text  { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; }
+
+/* ── Snacks slot stub ── */
+.planner-slot.stub {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+.stub-text { font-size: 0.72rem; }
+
+/* ── Day macro actual/target ── */
+.day-macro-target {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin: 0 1px;
+}
+
+.day-macro-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
