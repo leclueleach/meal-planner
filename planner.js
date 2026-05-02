@@ -178,10 +178,10 @@ const Planner = (() => {
       people.map(person => {
         const m = dayMacros[person.name] || { kcal:0, protein:0, carbs:0, fat:0 };
         const t = {
-          kcal:    person.target_kcal    || 1800,
-          protein: person.target_protein || 120,
-          carbs:   person.target_carbs   || 180,
-          fat:     person.target_fat     || 60,
+          kcal:    person.target_kcal    > 0 ? person.target_kcal    : 1800,
+          protein: person.target_protein > 0 ? person.target_protein : 120,
+          carbs:   person.target_carbs   > 0 ? person.target_carbs   : 180,
+          fat:     person.target_fat     > 0 ? person.target_fat     : 60,
         };
         return '<div class="day-macro-person">' +
           '<div class="day-macro-name">' + person.name + '</div>' +
@@ -214,7 +214,8 @@ const Planner = (() => {
       '<div class="macros-section-title">Weekly summary (' + n + ' day' + (n !== 1 ? 's' : '') + ')</div>' +
       '<div class="macros-people-grid">' +
         people.map(person => {
-          const t  = { kcal: (person.target_kcal||1800)*n, protein: (person.target_protein||120)*n, carbs: (person.target_carbs||180)*n, fat: (person.target_fat||60)*n };
+          const tk = person.target_kcal>0?person.target_kcal:1800; const tp = person.target_protein>0?person.target_protein:120; const tc = person.target_carbs>0?person.target_carbs:180; const tf = person.target_fat>0?person.target_fat:60;
+          const t  = { kcal: tk*n, protein: tp*n, carbs: tc*n, fat: tf*n };
           const d  = totals[person.name];
           return '<div class="macro-person-card">' +
             '<div class="macro-person-name">' + person.name + '</div>' +
