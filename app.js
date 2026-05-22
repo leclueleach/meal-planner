@@ -41,6 +41,7 @@ const App = (() => {
     document.querySelectorAll('.rec-tab').forEach(t => t.addEventListener('click', () => switchRecipesTab(t.dataset.tab)));
     PlannerSection.mount(document.getElementById('planner-content'));
     Household.mount(document.getElementById('household-content'));
+    Snacks.mount(document.getElementById('snacks-content'));
   }
 
   // ── Auth ─────────────────────────────────────────────────
@@ -55,7 +56,7 @@ const App = (() => {
   async function loadData() {
     setLoading(true); setError(null);
     try {
-      const [people, breakfast, lunch, dinner, cookingSteps, macroTable, householdItems] = await Promise.all([
+      const [people, breakfast, lunch, dinner, cookingSteps, macroTable, householdItems, snacksItems, plannerSnacks] = await Promise.all([
         Sheets.getPeople(),
         Sheets.getMeals(CONFIG.TABS.BREAKFAST),
         Sheets.getMeals(CONFIG.TABS.LUNCH),
@@ -63,6 +64,8 @@ const App = (() => {
         Sheets.getCookingSteps(),
         Sheets.getMacroTable(),
         Sheets.getHouseholdItems(),
+        Sheets.getSnacksItems(),
+        Sheets.getPlannerSnacks(),
       ]);
       state.people       = people;
       state.meals        = { breakfast, lunch, dinner };
@@ -71,6 +74,8 @@ const App = (() => {
       state.mealServings = {};
       [...breakfast, ...lunch, ...dinner].forEach(m => { state.mealServings[m.name] = 1; });
       Household.init(householdItems);
+      Snacks.init(snacksItems);
+      window._plannerMeals.snacks = plannerSnacks;
       window._plannerPeople     = people;
       window._plannerMeals      = { breakfast, lunch, dinner };
       window._plannerMacroTable = macroTable;
@@ -94,7 +99,7 @@ const App = (() => {
   // Get unique meals selected anywhere in the planner
   function getPlannerSelectedMeals() {
     const plan = Planner.getPlan();
-    const selected = { breakfast: new Set(), lunch: new Set(), dinner: new Set() };
+    const selected = { breakfast: new Set(), lunch: new Set(), dinner: new Set(), snacks: new Set() };
 
     Object.values(plan).forEach(day => {
       if (!day.enabled) return;
@@ -107,8 +112,8 @@ const App = (() => {
 
     // Build filtered meal arrays with include=true only for selected
     const result = {};
-    ['breakfast','lunch','dinner'].forEach(type => {
-      result[type] = state.meals[type].map(m => ({
+    ['breakfast','lunch','dinner','snacks'].forEach(type => {
+      result[type] = (state.meals[type] || []).map(m => ({
         ...m,
         include: selected[type].has(m.name),
       }));
@@ -259,6 +264,7 @@ const App = (() => {
     document.getElementById('screen-meals-list').style.display    = tab === 'meals'       ? 'block' : 'none';
     document.getElementById('screen-household').style.display     = tab === 'household'   ? 'block' : 'none';
     if (tab === 'household') Household.render();
+    if (tab === 'snacks-shop') Snacks.render();
     document.getElementById('screen-snacks-shop').style.display   = tab === 'snacks-shop' ? 'block' : 'none';
     if (tab === 'meals') { renderList(); renderProgress(); }
   }
