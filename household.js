@@ -96,10 +96,12 @@ const Household = (() => {
     const next = Math.max(0, current + delta);
     quantities[id] = next;
     save();
-    // Update just the counter display
     const qtyEl = document.getElementById('hqty-' + id);
     const cardEl = document.querySelector('[data-hid="' + id + '"]');
-    if (qtyEl) qtyEl.textContent = next;
+    if (qtyEl) {
+      qtyEl.textContent = next;
+      qtyEl.className = 'qty-count' + (next > 0 ? ' qty-has' : '');
+    }
     if (cardEl) cardEl.classList.toggle('qty-active', next > 0);
   }
 
