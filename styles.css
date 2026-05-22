@@ -1159,7 +1159,7 @@ html, body {
 .qty-btn {
   background: var(--surface2);
   border: none;
-  color: var(--text-muted);
+  color: #f0f0f0;
   width: 24px;
   height: 24px;
   border-radius: 5px;
