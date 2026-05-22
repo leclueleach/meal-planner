@@ -30,12 +30,12 @@ const App = (() => {
   // ── Init ─────────────────────────────────────────────────
   function init() {
     Auth.init(onSignedIn, onSignedOut);
-    document.getElementById('btn-signin').addEventListener('click', Auth.signIn);
-    document.getElementById('btn-signout').addEventListener('click', () => { Auth.signOut(); onSignedOut(); });
-    document.getElementById('btn-signout-r').addEventListener('click', () => { Auth.signOut(); onSignedOut(); });
-    document.getElementById('btn-refresh').addEventListener('click', loadData);
-    document.getElementById('btn-refresh-r').addEventListener('click', loadData);
-    document.getElementById('btn-uncheck').addEventListener('click', clearChecked);
+    const btnSignin   = document.getElementById('btn-signin');   if (btnSignin)   btnSignin.addEventListener('click', Auth.signIn);
+    const btnSignout  = document.getElementById('btn-signout');  if (btnSignout)  btnSignout.addEventListener('click', () => { Auth.signOut(); onSignedOut(); });
+    const btnSignoutR = document.getElementById('btn-signout-r');if (btnSignoutR) btnSignoutR.addEventListener('click', () => { Auth.signOut(); onSignedOut(); });
+    const btnRefresh  = document.getElementById('btn-refresh');  if (btnRefresh)  btnRefresh.addEventListener('click', loadData);
+    const btnRefreshR = document.getElementById('btn-refresh-r');if (btnRefreshR) btnRefreshR.addEventListener('click', loadData);
+    const btnUncheck  = document.getElementById('btn-uncheck');  if (btnUncheck)  btnUncheck.addEventListener('click', clearChecked);
     document.querySelectorAll('.section-tab').forEach(t => t.addEventListener('click', () => switchSection(t.dataset.section)));
     document.querySelectorAll('.nav-tab').forEach(t => t.addEventListener('click', () => switchShopTab(t.dataset.tab)));
     document.querySelectorAll('.rec-tab').forEach(t => t.addEventListener('click', () => switchRecipesTab(t.dataset.tab)));
