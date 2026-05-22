@@ -1146,3 +1146,43 @@ html, body {
   line-height: 1;
 }
 .item-remove:hover { color: #ff6b6b; }
+
+/* ── Item quantity counter (Household & Snacks) ── */
+.item-qty-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.qty-btn {
+  background: var(--surface2);
+  border: none;
+  color: var(--text-muted);
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+.qty-btn:hover { background: var(--accent); color: var(--accent-text); }
+
+.qty-count {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  min-width: 16px;
+  text-align: center;
+  font-weight: 500;
+  transition: color 0.12s;
+}
+.qty-count.qty-has { color: var(--accent); }
+
+.item.qty-active {
+  border-left: 2px solid var(--accent);
+}
