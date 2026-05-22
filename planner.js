@@ -165,18 +165,30 @@ const Planner = (() => {
             (mealName ? '<button class="slot-clear" onclick="event.stopPropagation();Planner.clearMeal(\'' + safeKey + '\',\'' + safePerson + '\',\'' + slot + '\')">×</button>' : '') +
           '</div>';
         }).join('') +
-        // Snacks slot — real picker
-        (() => {
-          const snackName = plan[key]?.meals[person.name]?.['snacks'] || null;
-          return '<div class="planner-slot ' + (snackName ? 'filled' : '') + '" onclick="Planner.openPicker('' + key + '','' + person.name.replace(/'/g,"\'") + '','snacks')">' +
-            '<div class="slot-icon">🍎</div>' +
-            '<div class="slot-content">' +
-              (snackName ? '<div class="slot-meal">' + snackName + '</div>' : '<div class="slot-empty">Snacks</div>') +
-            '</div>' +
-            (snackName ? '<button class="slot-clear" onclick="event.stopPropagation();Planner.clearMeal('' + key + '','' + person.name.replace(/'/g,"\'") + '','snacks')">×</button>' : '') +
-          '</div>';
-        })() +
+        // Snacks slot
+        renderSnackSlot(key, person, allMeals) +
       '</div></div>';
+  }
+
+  function renderSnackSlot(key, person) {
+    const dayPlan = plan[key];
+    const snackName = dayPlan && dayPlan.meals[person.name] ? dayPlan.meals[person.name]['snacks'] : null;
+    const el = document.createElement('div');
+    el.className = 'planner-slot' + (snackName ? ' filled' : '');
+    el.innerHTML =
+      '<div class="slot-icon">&#127822;</div>' +
+      '<div class="slot-content">' +
+        (snackName ? '<div class="slot-meal">' + snackName + '</div>' : '<div class="slot-empty">Snacks</div>') +
+      '</div>' +
+      (snackName ? '<button class="slot-clear">&#215;</button>' : '');
+    el.addEventListener('click', function() { Planner.openSnackPicker(key, person.name); });
+    if (snackName) {
+      el.querySelector('.slot-clear').addEventListener('click', function(e) {
+        e.stopPropagation();
+        Planner.clearSnack(key, person.name);
+      });
+    }
+    return el.outerHTML;
   }
 
   function renderDayMacroSummary(people, dayMacros) {
@@ -288,7 +300,15 @@ const Planner = (() => {
     if (picker) picker.classList.remove('open');
   }
 
-  return { init, render, getPlan, toggleDay, openPicker, closePicker, selectMeal, clearMeal };
+  function openSnackPicker(dateKey, person) {
+    openPicker(dateKey, person, 'snacks');
+  }
+
+  function clearSnack(dateKey, person) {
+    clearMeal(dateKey, person, 'snacks');
+  }
+
+  return { init, render, getPlan, toggleDay, openPicker, openSnackPicker, closePicker, selectMeal, clearMeal, clearSnack };
 })();
 
 // ── PlannerSection ────────────────────────────────────────
