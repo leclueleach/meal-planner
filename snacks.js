@@ -82,7 +82,10 @@ const Snacks = (() => {
     save();
     const qtyEl = document.getElementById('sqty-' + id);
     const cardEl = document.querySelector('[data-sid="' + id + '"]');
-    if (qtyEl) qtyEl.textContent = next;
+    if (qtyEl) {
+      qtyEl.textContent = next;
+      qtyEl.className = 'qty-count' + (next > 0 ? ' qty-has' : '');
+    }
     if (cardEl) cardEl.classList.toggle('qty-active', next > 0);
   }
 
