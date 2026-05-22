@@ -63,9 +63,9 @@ const App = (() => {
         Sheets.getMeals(CONFIG.TABS.DINNER),
         Sheets.getCookingSteps(),
         Sheets.getMacroTable(),
-        Sheets.getHouseholdItems(),
-        Sheets.getSnacksItems(),
-        Sheets.getPlannerSnacks(),
+        Sheets.getHouseholdItems().catch(() => []),
+        Sheets.getSnacksItems().catch(() => []),
+        Sheets.getPlannerSnacks().catch(() => []),
       ]);
       state.people       = people;
       state.meals        = { breakfast, lunch, dinner };
