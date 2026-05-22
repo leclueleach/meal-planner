@@ -287,5 +287,23 @@ const Sheets = (() => {
     });
   }
 
-  return { getPeople, getMeals, getCookingSteps, getMacroTable, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros };
+  // ── Household Tab ───────────────────────────────────────
+  // Columns: Include, Category, Item, Brand/Notes, Recurring
+  async function getHouseholdItems() {
+    const rows = await fetchRange(CONFIG.TABS.HOUSEHOLD, 'A2:E200');
+    return rows
+      .filter(r => r.length >= 3 && (r[0] || '').toUpperCase() === 'TRUE')
+      .map((r, idx) => ({
+        id: 'sheet_' + idx,
+        category:  (r[1] || 'Miscellaneous').trim(),
+        name:      (r[2] || '').trim(),
+        notes:     (r[3] || '').trim(),
+        recurring: (r[4] || '').toUpperCase() === 'TRUE',
+        checked:   false,
+        manual:    false,
+      }))
+      .filter(r => r.name);
+  }
+
+  return { getPeople, getMeals, getCookingSteps, getMacroTable, getHouseholdItems, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros };
 })();
