@@ -7,6 +7,7 @@ const Household = (() => {
   const STORAGE_KEY  = 'mealplanner_household_v1';
   const MANUAL_KEY   = 'mealplanner_household_manual_v1';
   const CHECKED_KEY  = 'mealplanner_household_checked_v1';
+  const QTY_KEY      = 'mealplanner_household_qty_v1';
 
   const CAT_ICONS = {
     'Cleaning':           '🧹',
@@ -20,6 +21,7 @@ const Household = (() => {
   let sheetItems  = [];   // from Google Sheets
   let manualItems = [];   // manually added in app
   let checked     = {};   // { itemId: true/false }
+  let quantities  = {};   // { itemId: number }
   let activeCategory = null; // category picker open for manual add
   let container   = null;
 
@@ -28,6 +30,7 @@ const Household = (() => {
     try {
       localStorage.setItem(MANUAL_KEY,  JSON.stringify(manualItems));
       localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
+      localStorage.setItem(QTY_KEY,     JSON.stringify(quantities));
     } catch(e) {}
   }
 
@@ -35,9 +38,11 @@ const Household = (() => {
     try {
       const m = localStorage.getItem(MANUAL_KEY);
       const c = localStorage.getItem(CHECKED_KEY);
+      const q = localStorage.getItem(QTY_KEY);
       if (m) manualItems = JSON.parse(m);
       if (c) checked     = JSON.parse(c);
-    } catch(e) { manualItems = []; checked = {}; }
+      if (q) quantities  = JSON.parse(q);
+    } catch(e) { manualItems = []; checked = {}; quantities = {}; }
   }
 
   // ── Init ──────────────────────────────────────────────────
@@ -84,6 +89,18 @@ const Household = (() => {
     checked = {};
     save();
     render();
+  }
+
+  function changeQty(id, delta) {
+    const current = quantities[id] || 0;
+    const next = Math.max(0, current + delta);
+    quantities[id] = next;
+    save();
+    // Update just the counter display
+    const qtyEl = document.getElementById('hqty-' + id);
+    const cardEl = document.querySelector('[data-hid="' + id + '"]');
+    if (qtyEl) qtyEl.textContent = next;
+    if (cardEl) cardEl.classList.toggle('qty-active', next > 0);
   }
 
   function updateCatCount(id) {
@@ -185,5 +202,5 @@ const Household = (() => {
     input.focus();
   }
 
-  return { init, mount, render, toggleItem, addManualItem, removeManualItem, clearManualItems, uncheckAll, submitQuickAdd };
+  return { init, mount, render, toggleItem, changeQty, addManualItem, removeManualItem, clearManualItems, uncheckAll, submitQuickAdd };
 })();
