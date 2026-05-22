@@ -139,7 +139,8 @@ const Snacks = (() => {
               '<div class="category-items">' +
                 items.map(item => {
                   const isChecked = !!checked[item.id];
-                  return '<div class="item ' + (isChecked ? 'checked' : '') + '" data-sid="' + item.id + '" onclick="Snacks.toggleItem(\'' + item.id + '\')">' +
+                  const qty = quantities[item.id] || 0;
+                  return '<div class="item ' + (isChecked ? 'checked' : '') + ' ' + (qty > 0 ? 'qty-active' : '') + '" data-sid="' + item.id + '" onclick="Snacks.toggleItem(\'' + item.id + '\')">' +
                     '<div class="checkbox"><span class="checkmark">✓</span></div>' +
                     '<div class="item-text">' +
                       '<div class="item-name">' + item.name +
@@ -147,6 +148,11 @@ const Snacks = (() => {
                         (item.recurring ? ' <span class="recurring-tag">recurring</span>' : '') +
                       '</div>' +
                       (item.notes ? '<div class="item-note">' + item.notes + '</div>' : '') +
+                    '</div>' +
+                    '<div class="item-qty-ctrl" onclick="event.stopPropagation()">' +
+                      '<button class="qty-btn" onclick="Snacks.changeQty(\'' + item.id + '\', -1)">−</button>' +
+                      '<span class="qty-count ' + (qty > 0 ? 'qty-has' : '') + '" id="sqty-' + item.id + '">' + qty + '</span>' +
+                      '<button class="qty-btn" onclick="Snacks.changeQty(\'' + item.id + '\', 1)">+</button>' +
                     '</div>' +
                     (item.manual ? '<button class="item-remove" onclick="event.stopPropagation();Snacks.removeManualItem(\'' + item.id + '\')">×</button>' : '') +
                   '</div>';
