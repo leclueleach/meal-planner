@@ -305,5 +305,27 @@ const Sheets = (() => {
       .filter(r => r.name);
   }
 
-  return { getPeople, getMeals, getCookingSteps, getMacroTable, getHouseholdItems, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros };
+  // ── Snacks Shopping Tab ─────────────────────────────────
+  async function getSnacksItems() {
+    const rows = await fetchRange(CONFIG.TABS.SNACKS, 'A2:E200');
+    return rows
+      .filter(r => r.length >= 3 && (r[0] || '').toUpperCase() === 'TRUE')
+      .map((r, idx) => ({
+        id: 'snack_' + idx,
+        category:  (r[1] || 'Miscellaneous').trim(),
+        name:      (r[2] || '').trim(),
+        notes:     (r[3] || '').trim(),
+        recurring: (r[4] || '').toUpperCase() === 'TRUE',
+        checked:   false,
+        manual:    false,
+      }))
+      .filter(r => r.name);
+  }
+
+  // ── Planner Snacks Tab ───────────────────────────────────
+  async function getPlannerSnacks() {
+    return getMeals(CONFIG.TABS.PLANNER_SNACKS);
+  }
+
+  return { getPeople, getMeals, getCookingSteps, getMacroTable, getHouseholdItems, getSnacksItems, getPlannerSnacks, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros };
 })();
