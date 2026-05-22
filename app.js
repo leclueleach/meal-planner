@@ -40,6 +40,7 @@ const App = (() => {
     document.querySelectorAll('.nav-tab').forEach(t => t.addEventListener('click', () => switchShopTab(t.dataset.tab)));
     document.querySelectorAll('.rec-tab').forEach(t => t.addEventListener('click', () => switchRecipesTab(t.dataset.tab)));
     PlannerSection.mount(document.getElementById('planner-content'));
+    Household.mount(document.getElementById('household-content'));
   }
 
   // ── Auth ─────────────────────────────────────────────────
@@ -54,13 +55,14 @@ const App = (() => {
   async function loadData() {
     setLoading(true); setError(null);
     try {
-      const [people, breakfast, lunch, dinner, cookingSteps, macroTable] = await Promise.all([
+      const [people, breakfast, lunch, dinner, cookingSteps, macroTable, householdItems] = await Promise.all([
         Sheets.getPeople(),
         Sheets.getMeals(CONFIG.TABS.BREAKFAST),
         Sheets.getMeals(CONFIG.TABS.LUNCH),
         Sheets.getMeals(CONFIG.TABS.DINNER),
         Sheets.getCookingSteps(),
         Sheets.getMacroTable(),
+        Sheets.getHouseholdItems(),
       ]);
       state.people       = people;
       state.meals        = { breakfast, lunch, dinner };
@@ -68,6 +70,7 @@ const App = (() => {
       state.macroTable   = macroTable;
       state.mealServings = {};
       [...breakfast, ...lunch, ...dinner].forEach(m => { state.mealServings[m.name] = 1; });
+      Household.init(householdItems);
       window._plannerPeople     = people;
       window._plannerMeals      = { breakfast, lunch, dinner };
       window._plannerMacroTable = macroTable;
@@ -255,6 +258,7 @@ const App = (() => {
     const tab = state.shopTab;
     document.getElementById('screen-meals-list').style.display    = tab === 'meals'       ? 'block' : 'none';
     document.getElementById('screen-household').style.display     = tab === 'household'   ? 'block' : 'none';
+    if (tab === 'household') Household.render();
     document.getElementById('screen-snacks-shop').style.display   = tab === 'snacks-shop' ? 'block' : 'none';
     if (tab === 'meals') { renderList(); renderProgress(); }
   }
