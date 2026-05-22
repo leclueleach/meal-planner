@@ -75,9 +75,8 @@ const App = (() => {
       [...breakfast, ...lunch, ...dinner].forEach(m => { state.mealServings[m.name] = 1; });
       Household.init(householdItems);
       Snacks.init(snacksItems);
-      window._plannerMeals.snacks = plannerSnacks;
       window._plannerPeople     = people;
-      window._plannerMeals      = { breakfast, lunch, dinner };
+      window._plannerMeals      = { breakfast, lunch, dinner, snacks: plannerSnacks };
       window._plannerMacroTable = macroTable;
       Planner.init(people);
       loadMealSelections();
