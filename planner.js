@@ -79,7 +79,7 @@ const Planner = (() => {
     const result = { total: { kcal:0, protein:0, carbs:0, fat:0 } };
     people.forEach(person => {
       result[person.name] = { kcal:0, protein:0, carbs:0, fat:0 };
-      ['breakfast','lunch','dinner'].forEach(slot => {
+      ['breakfast','lunch','dinner','snacks'].forEach(slot => {
         const mealName = plan[key]?.meals[person.name]?.[slot];
         if (!mealName) return;
         const meal = Object.values(allMeals).flat().find(m => m.name === mealName);
@@ -165,11 +165,17 @@ const Planner = (() => {
             (mealName ? '<button class="slot-clear" onclick="event.stopPropagation();Planner.clearMeal(\'' + safeKey + '\',\'' + safePerson + '\',\'' + slot + '\')">×</button>' : '') +
           '</div>';
         }).join('') +
-        // Snacks stub
-        '<div class="planner-slot stub">' +
-          '<div class="slot-icon">🍎</div>' +
-          '<div class="slot-content"><div class="slot-empty stub-text">Snacks — coming soon</div></div>' +
-        '</div>' +
+        // Snacks slot — real picker
+        (() => {
+          const snackName = plan[key]?.meals[person.name]?.['snacks'] || null;
+          return '<div class="planner-slot ' + (snackName ? 'filled' : '') + '" onclick="Planner.openPicker('' + key + '','' + person.name.replace(/'/g,"\'") + '','snacks')">' +
+            '<div class="slot-icon">🍎</div>' +
+            '<div class="slot-content">' +
+              (snackName ? '<div class="slot-meal">' + snackName + '</div>' : '<div class="slot-empty">Snacks</div>') +
+            '</div>' +
+            (snackName ? '<button class="slot-clear" onclick="event.stopPropagation();Planner.clearMeal('' + key + '','' + person.name.replace(/'/g,"\'") + '','snacks')">×</button>' : '') +
+          '</div>';
+        })() +
       '</div></div>';
   }
 
@@ -248,12 +254,13 @@ const Planner = (() => {
     picker.classList.add('open');
     const people   = window._plannerPeople || [];
     const allMeals = window._plannerMeals  || {};
-    const meals    = (allMeals[slot] || []).filter(m => m.person === 'Both' || m.person === person);
+    const slotKey  = slot === 'snacks' ? 'snacks' : slot;
+    const meals    = (allMeals[slotKey] || []).filter(m => m.person === 'Both' || m.person === person);
     const current  = plan[dateKey]?.meals[person]?.[slot] || null;
 
     sheet.innerHTML =
       '<div class="picker-header">' +
-        '<span class="picker-title">' + (slot === 'breakfast' ? '🌅' : slot === 'lunch' ? '🥗' : '🍲') + ' ' + SLOT_LABELS[slot] + ' — ' + person + '</span>' +
+        '<span class="picker-title">' + (slot === 'breakfast' ? '🌅' : slot === 'lunch' ? '🥗' : slot === 'snacks' ? '🍎' : '🍲') + ' ' + SLOT_LABELS[slot] + ' — ' + person + '</span>' +
         '<button class="picker-close" onclick="Planner.closePicker()">×</button>' +
       '</div>' +
       '<div class="picker-meals">' +
