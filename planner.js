@@ -78,18 +78,18 @@ const Planner = (() => {
   function calcDayMacros(key, people, allMeals, macroTable) {
     const result = { total: { kcal:0, protein:0, carbs:0, fat:0 } };
     people.forEach(person => {
-      result[person.name] = { kcal:0, protein:0, carbs:0, fat:0 };
+      result[person.name] = { kcal:0, protein:0, carbs:0, fat:0, fibre:0 };
       ['breakfast','lunch','dinner','snacks'].forEach(slot => {
         const mealName = plan[key]?.meals[person.name]?.[slot];
         if (!mealName) return;
         const meal = Object.values(allMeals).flat().find(m => m.name === mealName);
         if (!meal) return;
-        // Pass the specific person so macros scale correctly
         const macros = Sheets.calcMealMacrosPublic(meal, person, macroTable, 1);
         result[person.name].kcal    += macros.kcal;
         result[person.name].protein += macros.protein;
         result[person.name].carbs   += macros.carbs;
         result[person.name].fat     += macros.fat;
+        result[person.name].fibre   += macros.fibre || 0;
       });
       result.total.kcal    += result[person.name].kcal;
       result.total.protein += result[person.name].protein;
@@ -195,6 +195,7 @@ const Planner = (() => {
           protein: person.target_protein > 0 ? person.target_protein : 120,
           carbs:   person.target_carbs   > 0 ? person.target_carbs   : 180,
           fat:     person.target_fat     > 0 ? person.target_fat     : 60,
+          fibre:   person.target_fibre   > 0 ? person.target_fibre   : 30,
         };
         return '<div class="day-macro-person">' +
           '<div class="day-macro-name">' + person.name + '</div>' +
@@ -203,6 +204,7 @@ const Planner = (() => {
             '<span style="color:#6aafd4">🥩 ' + m.protein + '<span class="day-macro-target">/' + t.protein + '</span>g</span>' +
             '<span style="color:#f0c040">🌾 ' + m.carbs + '<span class="day-macro-target">/' + t.carbs + '</span>g</span>' +
             '<span style="color:#b990cc">🫒 ' + m.fat + '<span class="day-macro-target">/' + t.fat + '</span>g</span>' +
+            '<span style="color:#4ecb71">🌿 ' + (m.fibre || 0).toFixed(1) + '<span class="day-macro-target">/' + t.fibre + '</span>g</span>' +
           '</div>' +
         '</div>';
       }).join('') +
@@ -211,15 +213,16 @@ const Planner = (() => {
 
   function renderWeeklyMacros(enabledDays, people, allMeals, macroTable) {
     const totals = {};
-    people.forEach(p => { totals[p.name] = { kcal:0, protein:0, carbs:0, fat:0 }; });
+    people.forEach(p => { totals[p.name] = { kcal:0, protein:0, carbs:0, fat:0, fibre:0 }; });
     enabledDays.forEach(d => {
       const dm = calcDayMacros(toKey(d), people, allMeals, macroTable);
       people.forEach(p => {
-        const m = dm[p.name] || { kcal:0, protein:0, carbs:0, fat:0 };
+        const m = dm[p.name] || { kcal:0, protein:0, carbs:0, fat:0, fibre:0 };
         totals[p.name].kcal    += m.kcal;
         totals[p.name].protein += m.protein;
         totals[p.name].carbs   += m.carbs;
         totals[p.name].fat     += m.fat;
+        totals[p.name].fibre   += m.fibre || 0;
       });
     });
     const n = enabledDays.length;
@@ -227,8 +230,8 @@ const Planner = (() => {
       '<div class="macros-section-title">Weekly summary (' + n + ' day' + (n !== 1 ? 's' : '') + ')</div>' +
       '<div class="macros-people-grid">' +
         people.map(person => {
-          const tk = person.target_kcal>0?person.target_kcal:1800; const tp = person.target_protein>0?person.target_protein:120; const tc = person.target_carbs>0?person.target_carbs:180; const tf = person.target_fat>0?person.target_fat:60;
-          const t  = { kcal: tk*n, protein: tp*n, carbs: tc*n, fat: tf*n };
+          const tk = person.target_kcal>0?person.target_kcal:1800; const tp = person.target_protein>0?person.target_protein:120; const tc = person.target_carbs>0?person.target_carbs:180; const tf = person.target_fat>0?person.target_fat:60; const tfi = person.target_fibre>0?person.target_fibre:30;
+          const t  = { kcal: tk*n, protein: tp*n, carbs: tc*n, fat: tf*n, fibre: tfi*n };
           const d  = totals[person.name];
           return '<div class="macro-person-card">' +
             '<div class="macro-person-name">' + person.name + '</div>' +
@@ -236,6 +239,7 @@ const Planner = (() => {
             macroRowHTML('🥩','Protein',  d.protein, t.protein, 'g',   '#6aafd4') +
             macroRowHTML('🌾','Carbs',    d.carbs,   t.carbs,   'g',   '#f0c040') +
             macroRowHTML('🫒','Fat',      d.fat,     t.fat,     'g',   '#b990cc') +
+            macroRowHTML('🌿','Fibre',    Math.round((d.fibre||0)*10)/10, t.fibre*n, 'g', '#4ecb71') +
           '</div>';
         }).join('') +
       '</div></div>';
