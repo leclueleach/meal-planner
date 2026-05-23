@@ -20,23 +20,62 @@ const Sheets = (() => {
   }
 
   // ── People ───────────────────────────────────────────────
+  // Columns: Include, Name, Meal Type, Protein(g), Carbs(cups), Fat(tsp),
+  //          Veg(cups), Notes, Target kcal, Target protein, Target carbs,
+  //          Target fat, Target fibre
   async function getPeople() {
-    const rows = await fetchRange(CONFIG.TABS.PEOPLE, 'A2:L50');
-    return rows.filter(r => r.length >= 2).map((r, idx) => ({
-      id: idx,
-      include: (r[0] || '').toUpperCase() === 'TRUE',
-      name: r[1] || `Person ${idx + 1}`,
-      protein_g:  parseFloat(r[2]) || 0,
-      carbs_cups: parseFloat(r[3]) || 0,
-      fat_tsp:    parseFloat(r[4]) || 0,
-      veg_cups:   parseFloat(r[5]) || 0,
-      notes: r[6] || '',
-      target_kcal:    parseFloat(r[7]) || 0,
-      target_protein: parseFloat(r[8]) || 0,
-      target_carbs:   parseFloat(r[9]) || 0,
-      target_fat:     parseFloat(r[10]) || 0,
-      target_fibre:   parseFloat(r[11]) || 0,
-    }));
+    const rows = await fetchRange(CONFIG.TABS.PEOPLE, 'A2:M100');
+    // Group by person name — collect all meal types
+    const peopleMap = {};
+    const peopleOrder = [];
+
+    rows.filter(r => r.length >= 2 && (r[0]||'').toUpperCase() === 'TRUE').forEach((r, idx) => {
+      const name     = (r[1] || '').trim();
+      const mealType = (r[2] || 'all').trim().toLowerCase();
+      if (!name) return;
+
+      if (!peopleMap[name]) {
+        peopleMap[name] = {
+          id: idx, include: true, name,
+          notes: r[6] || '',
+          // Default fallbacks
+          protein_g: 0, carbs_cups: 0, fat_tsp: 0, veg_cups: 0,
+          target_kcal: 0, target_protein: 0, target_carbs: 0, target_fat: 0, target_fibre: 0,
+          // Per meal type
+          meals: {}
+        };
+        peopleOrder.push(name);
+      }
+
+      const entry = {
+        protein_g:      parseFloat(r[3])  || 0,
+        carbs_cups:     parseFloat(r[4])  || 0,
+        fat_tsp:        parseFloat(r[5])  || 0,
+        veg_cups:       parseFloat(r[6] === r[6] ? r[6] : 0) || 0,
+        notes:          r[7]  || '',
+        target_kcal:    parseFloat(r[8])  || 0,
+        target_protein: parseFloat(r[9])  || 0,
+        target_carbs:   parseFloat(r[10]) || 0,
+        target_fat:     parseFloat(r[11]) || 0,
+        target_fibre:   parseFloat(r[12]) || 0,
+      };
+
+      peopleMap[name].meals[mealType] = entry;
+
+      // Use dinner as the default for backwards compatibility
+      if (mealType === 'dinner' || mealType === 'all') {
+        Object.assign(peopleMap[name], entry);
+      }
+    });
+
+    return peopleOrder.map(name => peopleMap[name]);
+  }
+
+  // Helper — get person profile for a specific meal type
+  function getPersonForMealType(person, mealType) {
+    const meal = person.meals && person.meals[mealType.toLowerCase()];
+    if (!meal) return person; // fallback to default
+    return { ...person, ...meal };
   }
 
   // ── Meals ────────────────────────────────────────────────
@@ -224,7 +263,8 @@ const Sheets = (() => {
       Object.entries(allMeals).forEach(([mealType, meals]) => {
         meals.filter(m => m.include).forEach(meal => {
           const servings = mealServings[meal.name] || 1;
-          const macros = calcMealMacros(meal, person, macroTable, servings);
+          const personForMeal = getPersonForMealType(person, mealType);
+          const macros = calcMealMacros(meal, personForMeal, macroTable, servings);
           result[person.name].meals.push({
             mealName: meal.name,
             mealType,
@@ -259,10 +299,11 @@ const Sheets = (() => {
             return p.name === ing.person || p.name === meal.person;
           });
           applicablePeople.forEach(person => {
+            const personForMeal = getPersonForMealType(person, mealType);
             let scaledQty = ing.qty;
             if (scaledQty !== null) {
-              if (isProtein)   scaledQty = (ing.qty / 120) * person.protein_g;
-              else if (isCarb) scaledQty = ing.qty * person.carbs_cups;
+              if (isProtein)   scaledQty = (ing.qty / 120) * personForMeal.protein_g;
+              else if (isCarb) scaledQty = ing.qty * personForMeal.carbs_cups;
               scaledQty = scaledQty * timesToMake;
             }
             const key = `${ing.category}|${ing.ingredient}|${ing.unit || ''}`;
@@ -331,5 +372,5 @@ const Sheets = (() => {
     return getMeals(CONFIG.TABS.PLANNER_SNACKS);
   }
 
-  return { getPeople, getMeals, getCookingSteps, getMacroTable, getHouseholdItems, getSnacksItems, getPlannerSnacks, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros };
+  return { getPeople, getMeals, getCookingSteps, getMacroTable, getHouseholdItems, getSnacksItems, getPlannerSnacks, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros, getPersonForMealType };
 })();
