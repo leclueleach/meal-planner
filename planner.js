@@ -240,8 +240,22 @@ const Planner = (() => {
       '<div class="macros-section-title">Weekly summary (' + n + ' day' + (n !== 1 ? 's' : '') + ')</div>' +
       '<div class="macros-people-grid">' +
         people.map(person => {
-          const tk = person.target_kcal>0?person.target_kcal:1800; const tp = person.target_protein>0?person.target_protein:120; const tc = person.target_carbs>0?person.target_carbs:180; const tf = person.target_fat>0?person.target_fat:60; const tfi = person.target_fibre>0?person.target_fibre:30;
-          const t  = { kcal: tk*n, protein: tp*n, carbs: tc*n, fat: tf*n, fibre: tfi*n };
+          // Sum targets across all meal types for a single day, then multiply by n days
+          const dailyT = ['breakfast','lunch','dinner','snacks'].reduce((acc, s) => {
+            const mp = Sheets.getPersonForMealType(person, s);
+            acc.kcal    += mp.target_kcal    || 0;
+            acc.protein += mp.target_protein || 0;
+            acc.carbs   += mp.target_carbs   || 0;
+            acc.fat     += mp.target_fat     || 0;
+            acc.fibre   += mp.target_fibre   || 0;
+            return acc;
+          }, { kcal:0, protein:0, carbs:0, fat:0, fibre:0 });
+          if (!dailyT.kcal)    dailyT.kcal    = person.target_kcal    || 1800;
+          if (!dailyT.protein) dailyT.protein = person.target_protein || 120;
+          if (!dailyT.carbs)   dailyT.carbs   = person.target_carbs   || 180;
+          if (!dailyT.fat)     dailyT.fat     = person.target_fat     || 60;
+          if (!dailyT.fibre)   dailyT.fibre   = person.target_fibre   || 30;
+          const t = { kcal: dailyT.kcal*n, protein: dailyT.protein*n, carbs: dailyT.carbs*n, fat: dailyT.fat*n, fibre: dailyT.fibre*n };
           const d  = totals[person.name];
           return '<div class="macro-person-card">' +
             '<div class="macro-person-name">' + person.name + '</div>' +
