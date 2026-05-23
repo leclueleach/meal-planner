@@ -21,7 +21,7 @@ const Sheets = (() => {
 
   // ── People ───────────────────────────────────────────────
   async function getPeople() {
-    const rows = await fetchRange(CONFIG.TABS.PEOPLE, 'A2:K50');
+    const rows = await fetchRange(CONFIG.TABS.PEOPLE, 'A2:L50');
     return rows.filter(r => r.length >= 2).map((r, idx) => ({
       id: idx,
       include: (r[0] || '').toUpperCase() === 'TRUE',
@@ -35,6 +35,7 @@ const Sheets = (() => {
       target_protein: parseFloat(r[8]) || 0,
       target_carbs:   parseFloat(r[9]) || 0,
       target_fat:     parseFloat(r[10]) || 0,
+      target_fibre:   parseFloat(r[11]) || 0,
     }));
   }
 
@@ -66,7 +67,7 @@ const Sheets = (() => {
   // ── Macro reference table ────────────────────────────────
   // Columns: Ingredient, Calories/100g, Protein/100g, Carbs/100g, Fat/100g
   async function getMacroTable() {
-    const rows = await fetchRange(CONFIG.TABS.MACROS, 'A2:E200');
+    const rows = await fetchRange(CONFIG.TABS.MACROS, 'A2:F200');
     const table = {};
     rows.forEach(r => {
       if (r.length < 5) return;
@@ -77,6 +78,7 @@ const Sheets = (() => {
         protein: parseFloat(r[2]) || 0,
         carbs:   parseFloat(r[3]) || 0,
         fat:     parseFloat(r[4]) || 0,
+        fibre:   parseFloat(r[5]) || 0,
       };
     });
     return table;
@@ -160,7 +162,7 @@ const Sheets = (() => {
 
   // ── Calculate macros for a meal per person ───────────────
   function calcMealMacros(meal, person, macroTable, servings) {
-    let kcal = 0, protein = 0, carbs = 0, fat = 0;
+    let kcal = 0, protein = 0, carbs = 0, fat = 0, fibre = 0;
 
     meal.ingredients.forEach(ing => {
       // Only count ingredients applicable to this person
@@ -196,6 +198,7 @@ const Sheets = (() => {
       protein += macro.protein * factor;
       carbs   += macro.carbs   * factor;
       fat     += macro.fat     * factor;
+      fibre   += (macro.fibre  || 0) * factor;
     });
 
     return {
@@ -203,6 +206,7 @@ const Sheets = (() => {
       protein: Math.round(protein),
       carbs:   Math.round(carbs),
       fat:     Math.round(fat),
+      fibre:   Math.round(fibre * 10) / 10,
     };
   }
 
