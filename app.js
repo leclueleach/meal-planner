@@ -6,7 +6,7 @@ const App = (() => {
 
   let state = {
     people: [],
-    meals: { breakfast: [], lunch: [], dinner: [] },
+    meals: { breakfast: [], lunch: [], dinner: [], snacks: [] },
     cookingSteps: {},
     macroTable: {},
     shoppingList: [],
@@ -68,11 +68,11 @@ const App = (() => {
         Sheets.getPlannerSnacks().catch(() => []),
       ]);
       state.people       = people;
-      state.meals        = { breakfast, lunch, dinner };
+      state.meals        = { breakfast, lunch, dinner, snacks: plannerSnacks };
       state.cookingSteps = cookingSteps;
       state.macroTable   = macroTable;
       state.mealServings = {};
-      [...breakfast, ...lunch, ...dinner].forEach(m => { state.mealServings[m.name] = 1; });
+      [...breakfast, ...lunch, ...dinner, ...plannerSnacks].forEach(m => { state.mealServings[m.name] = 1; });
       Household.init(householdItems);
       Snacks.init(snacksItems);
       window._plannerPeople     = people;
@@ -361,7 +361,7 @@ const App = (() => {
       const personTag = m.person !== 'Both' ? '<span class="person-tag ' + (m.person === 'Le Clue' ? 'tag-you' : 'tag-her') + '">' + m.person + '</span>' : '';
       return '<div class="meal-card ' + (hasSteps ? 'clickable' : '') + '" onclick="' + (hasSteps ? 'App.openMeal(\'' + safeName + '\')' : '') + '">' +
         '<div class="meal-card-main">' +
-          '<div class="meal-card-icon">' + (tab === 'breakfast' ? '🌅' : tab === 'lunch' ? '🥗' : '🍲') + '</div>' +
+          '<div class="meal-card-icon">' + (tab === 'breakfast' ? '🌅' : tab === 'lunch' ? '🥗' : tab === 'snacks' ? '🍎' : '🍲') + '</div>' +
           '<div class="meal-card-info">' +
             '<div class="meal-card-name">' + m.name + ' ' + personTag + '</div>' +
             '<div class="meal-card-sub">' + (hasSteps ? state.cookingSteps[m.name].steps.length + ' steps · tap to cook' : 'No steps yet') + '</div>' +
@@ -427,7 +427,7 @@ const App = (() => {
     const wrap     = document.getElementById('cook-ingredients-wrap');
     if (!wrap) return;
     const mealName = state.activeMeal;
-    const mealInfo = [...state.meals.breakfast, ...state.meals.lunch, ...state.meals.dinner].find(m => m.name === mealName);
+    const mealInfo = [...state.meals.breakfast, ...state.meals.lunch, ...state.meals.dinner, ...(state.meals.snacks || [])].find(m => m.name === mealName);
     const servings = state.mealServings[mealName] || 1;
     const cookFor  = state.cookFor;
     const people   = state.people.filter(p => p.include);
