@@ -171,24 +171,19 @@ const Planner = (() => {
   }
 
   function renderSnackSlot(key, person) {
-    const dayPlan = plan[key];
+    const dayPlan   = plan[key];
     const snackName = dayPlan && dayPlan.meals[person.name] ? dayPlan.meals[person.name]['snacks'] : null;
-    const el = document.createElement('div');
-    el.className = 'planner-slot' + (snackName ? ' filled' : '');
-    el.innerHTML =
+    const pName     = person.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const clearBtn  = snackName
+      ? '<button class="slot-clear" onclick="event.stopPropagation();Planner.clearSnack(\'' + key + '\',\'' + pName + '\')">&#215;</button>'
+      : '';
+    return '<div class="planner-slot ' + (snackName ? 'filled' : '') + '" onclick="Planner.openSnackPicker(\'' + key + '\',\'' + pName + '\')">' +
       '<div class="slot-icon">&#127822;</div>' +
       '<div class="slot-content">' +
         (snackName ? '<div class="slot-meal">' + snackName + '</div>' : '<div class="slot-empty">Snacks</div>') +
       '</div>' +
-      (snackName ? '<button class="slot-clear">&#215;</button>' : '');
-    el.addEventListener('click', function() { Planner.openSnackPicker(key, person.name); });
-    if (snackName) {
-      el.querySelector('.slot-clear').addEventListener('click', function(e) {
-        e.stopPropagation();
-        Planner.clearSnack(key, person.name);
-      });
-    }
-    return el.outerHTML;
+      clearBtn +
+    '</div>';
   }
 
   function renderDayMacroSummary(people, dayMacros) {
