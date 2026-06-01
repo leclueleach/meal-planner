@@ -81,20 +81,20 @@ const Planner = (() => {
     let firstBatchFire = true;
 
     FirebaseSync.listenPlan(remotePlan => {
+      // Skip the first immediate fire — app already rendered from local data
+      if (firstPlanFire) { firstPlanFire = false; return; }
       if (!remotePlan || typeof remotePlan !== 'object') return;
       const people = (window._plannerPeople || []).filter(p => p && p.name);
       plan = remotePlan;
       getWeekDays().forEach(d => ensureDay(toKey(d), people));
-      // Skip the first immediate fire — app already rendered from local data
-      if (firstPlanFire) { firstPlanFire = false; return; }
       if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
       if (typeof App !== 'undefined') App.onPlannerChanged();
     });
 
     FirebaseSync.listenBatch(remoteBatch => {
+      if (firstBatchFire) { firstBatchFire = false; return; }
       if (!remoteBatch || typeof remoteBatch !== 'object') return;
       batchCounts = remoteBatch;
-      if (firstBatchFire) { firstBatchFire = false; return; }
       if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
     });
   }
