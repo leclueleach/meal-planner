@@ -30,6 +30,11 @@ const Snacks = (() => {
       localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
       localStorage.setItem(QTY_KEY,     JSON.stringify(quantities));
     } catch(e) {}
+    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+      FirebaseSync.saveSnacksChecked(checked);
+      FirebaseSync.saveSnacksQty(quantities);
+      FirebaseSync.saveSnacksManual(manualItems);
+    }
   }
 
   function load() {
@@ -43,7 +48,15 @@ const Snacks = (() => {
     } catch(e) { manualItems = []; checked = {}; quantities = {}; }
   }
 
-  function init(items) { sheetItems = items; load(); }
+  function init(items) {
+    sheetItems = items;
+    load();
+    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+      FirebaseSync.listenSnacksChecked(remote => { if (remote) { checked = remote; if (container) render(); } });
+      FirebaseSync.listenSnacksQty(remote => { if (remote) { quantities = remote; if (container) render(); } });
+      FirebaseSync.listenSnacksManual(remote => { if (remote) { manualItems = remote; if (container) render(); } });
+    }
+  }
   function mount(el)   { container = el; }
 
   function toggleItem(id) {
