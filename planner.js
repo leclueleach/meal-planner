@@ -206,7 +206,7 @@ const Planner = (() => {
       '<div class="planner-person-label">' + person.name + '</div>' +
       '<div class="planner-slots">' +
         ['breakfast','lunch','dinner'].map(slot => {
-          const mealName   = plan[key]?.meals[person.name]?.[slot] || null;
+          const mealName   = plan[key]?.meals?.[person.name]?.[slot] || null;
           const safeKey    = key;
           const safePerson = person.name.replace(/'/g,"\'");
           const batchCount = mealName ? getBatchCount(safeKey, safePerson, slot) : 1;
