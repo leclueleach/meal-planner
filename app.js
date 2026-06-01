@@ -49,17 +49,7 @@ const App = (() => {
     state.signedIn = true;
     showScreen('app');
     if (typeof FirebaseSync !== 'undefined') {
-      FirebaseSync.init(() => {
-        // Listen for remote checked changes
-        FirebaseSync.listenChecked(remoteChecked => {
-          if (!remoteChecked) return;
-          state.checked = remoteChecked;
-          if (state.activeSection === 'shopping' && state.shopTab === 'meals') {
-            renderList(); renderProgress();
-          }
-        });
-        loadData();
-      });
+      FirebaseSync.init(() => { loadData(); });
     } else {
       loadData();
     }
@@ -101,6 +91,17 @@ const App = (() => {
       loadChecked();
       rebuildList();
       renderAll();
+      // Now safe to start Firebase sync — people and meals are loaded
+      Planner.initSync();
+      if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+        FirebaseSync.listenChecked(remoteChecked => {
+          if (!remoteChecked || typeof remoteChecked !== 'object') return;
+          state.checked = remoteChecked;
+          if (state.activeSection === 'shopping' && state.shopTab === 'meals') {
+            renderList(); renderProgress();
+          }
+        });
+      }
     } catch (err) {
       setError('Could not load data from Google Sheets. ' + err.message);
     } finally { setLoading(false); }
