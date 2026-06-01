@@ -101,8 +101,8 @@ const Planner = (() => {
         const meal = Object.values(allMeals).flat().find(m => m.name === mealName);
         if (!meal) return;
         const personForMeal = Sheets.getPersonForMealType(person, slot);
-        const batch = getBatchCount(key, person.name, slot);
-        const macros = Sheets.calcMealMacrosPublic(meal, personForMeal, macroTable, batch);
+        // Macros always = 1 portion (what you eat), batch count only affects shopping
+        const macros = Sheets.calcMealMacrosPublic(meal, personForMeal, macroTable, 1);
         result[person.name].kcal    += macros.kcal;
         result[person.name].protein += macros.protein;
         result[person.name].carbs   += macros.carbs;
