@@ -45,7 +45,25 @@ const App = (() => {
   }
 
   // ── Auth ─────────────────────────────────────────────────
-  function onSignedIn() { state.signedIn = true; showScreen('app'); loadData(); }
+  function onSignedIn() {
+    state.signedIn = true;
+    showScreen('app');
+    if (typeof FirebaseSync !== 'undefined') {
+      FirebaseSync.init(() => {
+        // Listen for remote checked changes
+        FirebaseSync.listenChecked(remoteChecked => {
+          if (!remoteChecked) return;
+          state.checked = remoteChecked;
+          if (state.activeSection === 'shopping' && state.shopTab === 'meals') {
+            renderList(); renderProgress();
+          }
+        });
+        loadData();
+      });
+    } else {
+      loadData();
+    }
+  }
   function onSignedOut() { state.signedIn = false; showScreen('login'); }
   function showScreen(name) {
     document.getElementById('screen-login').style.display = name === 'login' ? 'flex' : 'none';
@@ -485,6 +503,9 @@ const App = (() => {
 
   function saveChecked() {
     try { localStorage.setItem(CHECKED_KEY, JSON.stringify(state.checked)); } catch(e) {}
+    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+      FirebaseSync.saveChecked(state.checked);
+    }
   }
   function loadChecked() {
     try { const s = localStorage.getItem(CHECKED_KEY); if (s) state.checked = JSON.parse(s); } catch(e) { state.checked = {}; }
