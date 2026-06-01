@@ -32,6 +32,11 @@ const Household = (() => {
       localStorage.setItem(CHECKED_KEY, JSON.stringify(checked));
       localStorage.setItem(QTY_KEY,     JSON.stringify(quantities));
     } catch(e) {}
+    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+      FirebaseSync.saveHouseholdChecked(checked);
+      FirebaseSync.saveHouseholdQty(quantities);
+      FirebaseSync.saveHouseholdManual(manualItems);
+    }
   }
 
   function load() {
@@ -49,6 +54,11 @@ const Household = (() => {
   function init(items) {
     sheetItems = items;
     load();
+    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+      FirebaseSync.listenHouseholdChecked(remote => { if (remote) { checked = remote; if (container) render(); } });
+      FirebaseSync.listenHouseholdQty(remote => { if (remote) { quantities = remote; if (container) render(); } });
+      FirebaseSync.listenHouseholdManual(remote => { if (remote) { manualItems = remote; if (container) render(); } });
+    }
   }
 
   function mount(el) { container = el; }
