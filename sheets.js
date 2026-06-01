@@ -260,8 +260,8 @@ const Sheets = (() => {
         meals: [],
       };
 
-      Object.entries(allMeals).forEach(([mealType, meals]) => {
-        meals.filter(m => m.include).forEach(meal => {
+      Object.entries(allMeals || {}).forEach(([mealType, meals]) => {
+        (meals || []).filter(m => m.include).forEach(meal => {
           const servings = mealServings[meal.name] || 1;
           const personForMeal = getPersonForMealType(person, mealType);
           const macros = calcMealMacros(meal, personForMeal, macroTable, servings);
