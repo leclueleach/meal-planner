@@ -111,6 +111,7 @@ const Planner = (() => {
 
   function setMeal(dateKey, person, slot, mealName) {
     if (!plan[dateKey]) return;
+    if (!plan[dateKey].meals[person]) plan[dateKey].meals[person] = { breakfast: null, lunch: null, dinner: null, snacks: null };
     plan[dateKey].meals[person][slot] = mealName;
     savePlan();
     activePicker = null;
@@ -120,6 +121,7 @@ const Planner = (() => {
 
   function clearMeal(dateKey, person, slot) {
     if (!plan[dateKey]) return;
+    if (!plan[dateKey].meals?.[person]) return;
     plan[dateKey].meals[person][slot] = null;
     savePlan();
     if (typeof App !== 'undefined') App.onPlannerChanged();
@@ -196,7 +198,7 @@ const Planner = (() => {
         '<span class="planner-day-name">' + DAY_FULL[dayIdx] + (isToday(date) ? ' <span class="today-badge">Today</span>' : '') + '</span>' +
         '<span class="planner-day-kcal">' + totalKcal + ' kcal</span>' +
       '</div>' +
-      people.map(person => renderPersonSlots(key, person, allMeals)).join('') +
+      people.filter(p => p && p.name).map(person => renderPersonSlots(key, person, allMeals)).join('') +
       renderDayMacroSummary(people, dayMacros) +
     '</div>';
   }
@@ -232,7 +234,7 @@ const Planner = (() => {
 
   function renderSnackSlot(key, person) {
     const dayPlan   = plan[key];
-    const snackName = dayPlan && dayPlan.meals[person.name] ? dayPlan.meals[person.name]['snacks'] : null;
+    const snackName = dayPlan?.meals?.[person.name]?.['snacks'] || null;
     const pName     = person.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const clearBtn  = snackName
       ? '<button class="slot-clear" onclick="event.stopPropagation();Planner.clearSnack(\'' + key + '\',\'' + pName + '\')">&#215;</button>'
@@ -248,7 +250,7 @@ const Planner = (() => {
 
   function renderDayMacroSummary(people, dayMacros) {
     return '<div class="day-macro-row">' +
-      people.map(person => {
+      people.filter(p => p && p.name).map(person => {
         const m = dayMacros[person.name] || { kcal:0, protein:0, carbs:0, fat:0 };
         // Sum targets across all meal types for the day
         const slots = ['breakfast','lunch','dinner','snacks'];
@@ -298,7 +300,7 @@ const Planner = (() => {
     return '<div class="weekly-macros">' +
       '<div class="macros-section-title">Weekly summary (' + n + ' day' + (n !== 1 ? 's' : '') + ')</div>' +
       '<div class="macros-people-grid">' +
-        people.map(person => {
+        people.filter(p => p && p.name).map(person => {
           // Sum targets across all meal types for a single day, then multiply by n days
           const dailyT = ['breakfast','lunch','dinner','snacks'].reduce((acc, s) => {
             const mp = Sheets.getPersonForMealType(person, s);
