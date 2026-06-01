@@ -26,10 +26,10 @@ const Planner = (() => {
   }
 
   function toKey(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
   }
   function isToday(date) { return toKey(date) === toKey(new Date()); }
 
@@ -291,7 +291,7 @@ const Planner = (() => {
             macroRowHTML('🥩','Protein',  d.protein, t.protein, 'g',   '#6aafd4') +
             macroRowHTML('🌾','Carbs',    d.carbs,   t.carbs,   'g',   '#f0c040') +
             macroRowHTML('🫒','Fat',      d.fat,     t.fat,     'g',   '#b990cc') +
-            macroRowHTML('🌿','Fibre',    Math.round((d.fibre||0)*10)/10, t.fibre*n, 'g', '#4ecb71') +
+            macroRowHTML('🌿','Fibre',    Math.round((d.fibre||0)*10)/10, t.fibre,   'g', '#4ecb71') +
           '</div>';
         }).join('') +
       '</div></div>';
