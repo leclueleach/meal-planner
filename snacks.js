@@ -106,10 +106,23 @@ const Snacks = (() => {
     const all  = [...sheetItems, ...manualItems];
     const item = all.find(i => i.id === id);
     if (!item) return;
-    const catItems = all.filter(i => i.category === item.category);
-    const done     = catItems.filter(i => checked[i.id]).length;
+    const catItems  = all.filter(i => i.category === item.category);
+    const catNeeded = catItems.filter(i => (quantities[i.id] || 0) >= 1);
+    const done      = catNeeded.filter(i => checked[i.id]).length;
     const el = document.getElementById('scat-count-' + CSS.escape(item.category));
-    if (el) el.textContent = done + '/' + catItems.length;
+    if (el) el.textContent = done + '/' + catNeeded.length;
+  }
+
+  function updateProgress() {
+    const all    = [...sheetItems, ...manualItems];
+    const needed = all.filter(i => (quantities[i.id] || 0) >= 1);
+    const total  = needed.length;
+    const done   = needed.filter(i => checked[i.id]).length;
+    const pct    = total ? Math.round((done / total) * 100) : 0;
+    const fill   = container ? container.querySelector('.progress-fill') : null;
+    const label  = container ? container.querySelector('.progress-label') : null;
+    if (fill)  fill.style.width = pct + '%';
+    if (label) label.textContent = done + ' of ' + total + ' items ticked';
   }
 
   function render() {
@@ -117,8 +130,9 @@ const Snacks = (() => {
     const all = [...sheetItems, ...manualItems];
     const cats = {};
     all.forEach(item => { if (!cats[item.category]) cats[item.category] = []; cats[item.category].push(item); });
-    const total    = all.length;
-    const done     = all.filter(i => checked[i.id]).length;
+    const needed   = all.filter(i => (quantities[i.id] || 0) >= 1);
+    const total    = needed.length;
+    const done     = needed.filter(i => checked[i.id]).length;
     const pct      = total ? Math.round((done / total) * 100) : 0;
     const hasManual = manualItems.length > 0;
 
@@ -141,14 +155,16 @@ const Snacks = (() => {
       (!all.length
         ? '<div class="list-empty">No snacks found. Add items above or check your Google Sheet.</div>'
         : Object.entries(cats).map(([cat, items]) => {
-            const catDone = items.filter(i => checked[i.id]).length;
-            const icon    = CAT_ICONS[cat] || '📦';
+            const catNeeded = items.filter(i => (quantities[i.id] || 0) >= 1);
+            const catDone   = catNeeded.filter(i => checked[i.id]).length;
+            const catTotal  = catNeeded.length;
+            const icon      = CAT_ICONS[cat] || '📦';
             return '<div class="category">' +
               '<div class="category-header" onclick="this.parentElement.classList.toggle(\'collapsed\')">' +
                 '<div class="category-title">' +
                   '<span class="category-icon">' + icon + '</span>' +
                   '<span class="category-name">' + cat + '</span>' +
-                  '<span class="category-count" id="scat-count-' + CSS.escape(cat) + '">' + catDone + '/' + items.length + '</span>' +
+                  '<span class="category-count" id="scat-count-' + CSS.escape(cat) + '">' + catDone + '/' + catTotal + '</span>' +
                 '</div>' +
                 '<span class="category-chevron">▼</span>' +
               '</div>' +
