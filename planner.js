@@ -48,8 +48,17 @@ const Planner = (() => {
   }
   function ensureDay(key, people) {
     if (!plan[key]) plan[key] = { enabled: false, meals: {} };
+    if (!plan[key].meals) plan[key].meals = {};  // guard missing meals object
     if (!people || !people.length) return;
-    people.forEach(p => { if (p && p.name && !plan[key].meals[p.name]) plan[key].meals[p.name] = { breakfast: null, lunch: null, dinner: null, snacks: null }; });
+    // Deduplicate by name in case raw 8-row people array is passed
+    const seen = {};
+    people.forEach(p => {
+      if (!p || !p.name || seen[p.name]) return;
+      seen[p.name] = true;
+      if (!plan[key].meals[p.name]) {
+        plan[key].meals[p.name] = { breakfast: null, lunch: null, dinner: null, snacks: null };
+      }
+    });
   }
 
   function getPlan() { return plan; }
