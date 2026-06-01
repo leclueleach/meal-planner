@@ -1186,3 +1186,38 @@ html, body {
 .item.qty-active {
   border-left: 2px solid var(--accent);
 }
+
+/* ── Planner slot batch counter ── */
+.slot-batch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.slot-batch-btn {
+  background: var(--surface2);
+  border: none;
+  color: #f0f0f0;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.slot-batch-btn:hover { background: var(--accent); color: var(--accent-text); }
+
+.slot-batch-count {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 500;
+  min-width: 20px;
+  text-align: center;
+}
