@@ -713,7 +713,8 @@ html, body {
   user-select: none;
 }
 .day-chip.enabled { border-color: var(--accent); background: var(--accent-dim); }
-.day-chip.today .day-chip-name { color: var(--accent); font-weight: 600; }
+.day-chip.today:not(.enabled) .day-chip-name { color: var(--accent); font-weight: 600; }
+.day-chip.today { border-color: var(--accent); }
 .day-chip-name { font-size: 0.72rem; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
 .day-chip-check { font-size: 0.65rem; color: var(--accent); font-weight: 700; height: 12px; }
 
