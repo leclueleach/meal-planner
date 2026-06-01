@@ -97,16 +97,26 @@ const App = (() => {
 
   // Get unique meals selected anywhere in the planner
   function getPlannerSelectedMeals() {
-    const plan = Planner.getPlan();
+    const plan     = Planner.getPlan();
     const selected = { breakfast: new Set(), lunch: new Set(), dinner: new Set(), snacks: new Set() };
+    const batchMax = {}; // { mealName: max batch count across all days/people }
 
-    Object.values(plan).forEach(day => {
+    Object.entries(plan).forEach(([dateKey, day]) => {
       if (!day.enabled) return;
-      Object.values(day.meals).forEach(personMeals => {
-        ['breakfast','lunch','dinner'].forEach(slot => {
-          if (personMeals[slot]) selected[slot].add(personMeals[slot]);
+      Object.entries(day.meals).forEach(([personName, personMeals]) => {
+        ['breakfast','lunch','dinner','snacks'].forEach(slot => {
+          const mealName = personMeals[slot];
+          if (!mealName) return;
+          selected[slot].add(mealName);
+          const batch = Planner.getBatchCount(dateKey, personName, slot);
+          batchMax[mealName] = Math.max(batchMax[mealName] || 1, batch);
         });
       });
+    });
+
+    // Override mealServings with batch counts from planner
+    Object.entries(batchMax).forEach(([mealName, count]) => {
+      state.mealServings[mealName] = count;
     });
 
     // Build filtered meal arrays with include=true only for selected
@@ -119,6 +129,7 @@ const App = (() => {
     });
     return result;
   }
+
 
   // ── Section switching ─────────────────────────────────────
   function switchSection(section) {
