@@ -48,7 +48,8 @@ const Planner = (() => {
   }
   function ensureDay(key, people) {
     if (!plan[key]) plan[key] = { enabled: false, meals: {} };
-    people.forEach(p => { if (!plan[key].meals[p.name]) plan[key].meals[p.name] = { breakfast: null, lunch: null, dinner: null, snacks: null }; });
+    if (!people || !people.length) return;
+    people.forEach(p => { if (p && p.name && !plan[key].meals[p.name]) plan[key].meals[p.name] = { breakfast: null, lunch: null, dinner: null, snacks: null }; });
   }
 
   function getPlan() { return plan; }
@@ -75,13 +76,17 @@ const Planner = (() => {
   // Called after all data (people, meals) is fully loaded
   function initSync() {
     if (typeof FirebaseSync === 'undefined' || !FirebaseSync.isReady()) return;
-    const people = window._plannerPeople || [];
-    if (!people.length) return; // Don't sync until people are loaded
+
+    let firstPlanFire  = true;
+    let firstBatchFire = true;
 
     FirebaseSync.listenPlan(remotePlan => {
       if (!remotePlan || typeof remotePlan !== 'object') return;
+      const people = (window._plannerPeople || []).filter(p => p && p.name);
       plan = remotePlan;
       getWeekDays().forEach(d => ensureDay(toKey(d), people));
+      // Skip the first immediate fire — app already rendered from local data
+      if (firstPlanFire) { firstPlanFire = false; return; }
       if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
       if (typeof App !== 'undefined') App.onPlannerChanged();
     });
@@ -89,6 +94,7 @@ const Planner = (() => {
     FirebaseSync.listenBatch(remoteBatch => {
       if (!remoteBatch || typeof remoteBatch !== 'object') return;
       batchCounts = remoteBatch;
+      if (firstBatchFire) { firstBatchFire = false; return; }
       if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
     });
   }
