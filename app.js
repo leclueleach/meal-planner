@@ -119,9 +119,9 @@ const App = (() => {
     const selected = { breakfast: new Set(), lunch: new Set(), dinner: new Set(), snacks: new Set() };
     const batchMax = {}; // { mealName: max batch count across all days/people }
 
-    Object.entries(plan).forEach(([dateKey, day]) => {
+    Object.entries(plan || {}).forEach(([dateKey, day]) => {
       if (!day.enabled) return;
-      Object.entries(day.meals).forEach(([personName, personMeals]) => {
+      Object.entries(day.meals || {}).forEach(([personName, personMeals]) => {
         ['breakfast','lunch','dinner','snacks'].forEach(slot => {
           const mealName = personMeals[slot];
           if (!mealName) return;
