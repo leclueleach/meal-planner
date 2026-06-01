@@ -827,3 +827,43 @@ html, body {
 .slot-batch-btn { background: var(--surface2); border: none; color: #f0f0f0; width: 20px; height: 20px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; transition: background 0.12s; flex-shrink: 0; line-height: 1; }
 .slot-batch-btn:hover { background: var(--accent); color: var(--accent-text); }
 .slot-batch-count { font-size: 0.75rem; color: var(--accent); font-weight: 500; min-width: 20px; text-align: center; }
+
+/* ── Inline edit ── */
+.inline-edit-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.edit-save-btn, .edit-cancel-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 5px;
+  flex-shrink: 0;
+}
+.edit-save-btn   { color: var(--accent); }
+.edit-cancel-btn { color: var(--text-muted); }
+.edit-save-btn:hover   { color: #bbff66; }
+.edit-cancel-btn:hover { color: var(--error); }
+
+.item-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 3px;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.item-edit-btn:hover { opacity: 1; }
+
+.item.editing { background: var(--accent-dim); border-left: 2px solid var(--accent); }
