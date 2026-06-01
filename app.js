@@ -83,7 +83,15 @@ const App = (() => {
       [...breakfast, ...lunch, ...dinner, ...plannerSnacks].forEach(m => { state.mealServings[m.name] = 1; });
       Household.init(householdItems);
       Snacks.init(snacksItems);
-      window._plannerPeople     = people;
+      // Deduplicate — People sheet has one row per meal type per person
+      const seen = {};
+      const uniquePeople = people.filter(p => {
+        if (!p.include || !p.name) return false;
+        if (seen[p.name]) return false;
+        seen[p.name] = true;
+        return true;
+      });
+      window._plannerPeople = uniquePeople;
       window._plannerMeals      = { breakfast, lunch, dinner, snacks: plannerSnacks };
       window._plannerMacroTable = macroTable;
       Planner.init(people);
@@ -124,7 +132,7 @@ const App = (() => {
       if (!day.enabled) return;
       Object.entries(day.meals || {}).forEach(([personName, personMeals]) => {
         ['breakfast','lunch','dinner','snacks'].forEach(slot => {
-          const mealName = personMeals[slot];
+          const mealName = personMeals?.[slot];
           if (!mealName) return;
           selected[slot].add(mealName);
           const batch = Planner.getBatchCount(dateKey, personName, slot);
