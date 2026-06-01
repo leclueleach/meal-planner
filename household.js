@@ -21,6 +21,7 @@ const Household = (() => {
   let manualItems = [];
   let checked     = {};
   let quantities  = {};
+  let editingId   = null;
   let container   = null;
 
   function save() {
@@ -60,6 +61,7 @@ const Household = (() => {
   function mount(el) { container = el; }
 
   function toggleItem(id) {
+    if (editingId === id) return;
     checked[id] = !checked[id];
     save();
     const el = document.querySelector('[data-hid="' + id + '"]');
@@ -75,10 +77,7 @@ const Household = (() => {
     save();
     const qtyEl  = document.getElementById('hqty-' + id);
     const cardEl = document.querySelector('[data-hid="' + id + '"]');
-    if (qtyEl) {
-      qtyEl.textContent = next;
-      qtyEl.className = 'qty-count' + (next > 0 ? ' qty-has' : '');
-    }
+    if (qtyEl) { qtyEl.textContent = next; qtyEl.className = 'qty-count' + (next > 0 ? ' qty-has' : ''); }
     if (cardEl) cardEl.classList.toggle('qty-active', next > 0);
     updateCatCount(id);
     updateProgress();
@@ -93,8 +92,8 @@ const Household = (() => {
 
   function removeManualItem(id) {
     manualItems = manualItems.filter(i => i.id !== id);
-    delete checked[id];
-    delete quantities[id];
+    delete checked[id]; delete quantities[id];
+    if (editingId === id) editingId = null;
     save(); render();
   }
 
@@ -105,7 +104,34 @@ const Household = (() => {
     save(); render();
   }
 
+  function clearAll() {
+    quantities = {};
+    checked = {};
+    save(); render();
+  }
+
   function uncheckAll() { checked = {}; save(); render(); }
+
+  function startEdit(id) {
+    editingId = id;
+    render();
+    const input = document.getElementById('hedit-' + id);
+    if (input) { input.focus(); input.select(); }
+  }
+
+  function saveEdit(id) {
+    const input = document.getElementById('hedit-' + id);
+    if (!input) return;
+    const newName = input.value.trim();
+    if (newName) {
+      const item = manualItems.find(i => i.id === id);
+      if (item) item.name = newName;
+    }
+    editingId = null;
+    save(); render();
+  }
+
+  function cancelEdit() { editingId = null; render(); }
 
   function updateCatCount(id) {
     const all       = [...sheetItems, ...manualItems];
@@ -152,8 +178,8 @@ const Household = (() => {
         '<div class="progress-label">' + done + ' of ' + total + ' items ticked</div>' +
       '</div>' +
       '<div class="household-actions">' +
-        '<button class="btn btn-ghost btn-sm" onclick="Household.uncheckAll()">Uncheck all</button>' +
-        (hasManual ? '<button class="btn btn-ghost btn-sm" onclick="Household.clearManualItems()">Clear manual items</button>' : '') +
+        '<button class="btn btn-ghost btn-sm" onclick="Household.clearAll()">Clear all</button>' +
+        (hasManual ? '<button class="btn btn-ghost btn-sm" onclick="Household.clearManualItems()">Remove manual</button>' : '') +
       '</div>' +
       '<div class="household-add-bar">' +
         '<input type="text" id="household-add-input" class="household-input" placeholder="Add an item..." onkeydown="if(event.key===\'Enter\')Household.submitQuickAdd()" />' +
@@ -183,7 +209,20 @@ const Household = (() => {
               '<div class="category-items">' +
                 items.map(function(item) {
                   const isChecked = !!checked[item.id];
-                  const qty = quantities[item.id] || 0;
+                  const qty       = quantities[item.id] || 0;
+                  const isEditing = editingId === item.id;
+
+                  if (isEditing) {
+                    return '<div class="item editing" data-hid="' + item.id + '">' +
+                      '<div class="checkbox"><span class="checkmark">✓</span></div>' +
+                      '<div class="item-text" style="flex:1">' +
+                        '<input type="text" id="hedit-' + item.id + '" class="inline-edit-input" value="' + item.name.replace(/"/g, '&quot;') + '" onkeydown="if(event.key===\'Enter\')Household.saveEdit(\'' + item.id + '\');if(event.key===\'Escape\')Household.cancelEdit()" onclick="event.stopPropagation()" />' +
+                      '</div>' +
+                      '<button class="edit-save-btn" onclick="event.stopPropagation();Household.saveEdit(\'' + item.id + '\')">✓</button>' +
+                      '<button class="edit-cancel-btn" onclick="event.stopPropagation();Household.cancelEdit()">✕</button>' +
+                    '</div>';
+                  }
+
                   return '<div class="item ' + (isChecked ? 'checked' : '') + ' ' + (qty > 0 ? 'qty-active' : '') + '" data-hid="' + item.id + '" onclick="Household.toggleItem(\'' + item.id + '\')">' +
                     '<div class="checkbox"><span class="checkmark">✓</span></div>' +
                     '<div class="item-text">' +
@@ -198,7 +237,10 @@ const Household = (() => {
                       '<span class="qty-count ' + (qty > 0 ? 'qty-has' : '') + '" id="hqty-' + item.id + '">' + qty + '</span>' +
                       '<button class="qty-btn" onclick="Household.changeQty(\'' + item.id + '\', 1)">+</button>' +
                     '</div>' +
-                    (item.manual ? '<button class="item-remove" onclick="event.stopPropagation();Household.removeManualItem(\'' + item.id + '\')">×</button>' : '') +
+                    (item.manual
+                      ? '<button class="item-edit-btn" onclick="event.stopPropagation();Household.startEdit(\'' + item.id + '\')">✏️</button>' +
+                        '<button class="item-remove" onclick="event.stopPropagation();Household.removeManualItem(\'' + item.id + '\')">×</button>'
+                      : '') +
                   '</div>';
                 }).join('') +
               '</div>' +
@@ -215,5 +257,5 @@ const Household = (() => {
     input.focus();
   }
 
-  return { init, mount, render, toggleItem, changeQty, addManualItem, removeManualItem, clearManualItems, uncheckAll, submitQuickAdd };
+  return { init, mount, render, toggleItem, changeQty, addManualItem, removeManualItem, clearManualItems, clearAll, uncheckAll, startEdit, saveEdit, cancelEdit, submitQuickAdd };
 })();
