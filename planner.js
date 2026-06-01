@@ -5,8 +5,10 @@
 const Planner = (() => {
 
   let plan = {};
+  let batchCounts = {}; // { 'dateKey|person|slot': count }
   let activePicker = null;
-  const STORAGE_KEY = 'mealplanner_plan_v1';
+  const STORAGE_KEY  = 'mealplanner_plan_v1';
+  const BATCH_KEY    = 'mealplanner_batch_v1';
   const SLOTS       = ['breakfast', 'lunch', 'dinner', 'snacks'];
   const SLOT_ICONS  = { breakfast: '🌅', lunch: '🥗', dinner: '🍲', snacks: '🍎' };
   const SLOT_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snacks: 'Snacks' };
@@ -29,9 +31,11 @@ const Planner = (() => {
   // ── Storage ───────────────────────────────────────────────
   function loadPlan() {
     try { const s = sessionStorage.getItem(STORAGE_KEY); if (s) plan = JSON.parse(s); } catch(e) { plan = {}; }
+    try { const b = sessionStorage.getItem(BATCH_KEY); if (b) batchCounts = JSON.parse(b); } catch(e) { batchCounts = {}; }
   }
   function savePlan() {
     try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(plan)); } catch(e) {}
+    try { sessionStorage.setItem(BATCH_KEY, JSON.stringify(batchCounts)); } catch(e) {}
   }
   function ensureDay(key, people) {
     if (!plan[key]) plan[key] = { enabled: false, meals: {} };
@@ -39,6 +43,18 @@ const Planner = (() => {
   }
 
   function getPlan() { return plan; }
+  function getBatchKey(dateKey, person, slot) { return dateKey + '|' + person + '|' + slot; }
+  function getBatchCount(dateKey, person, slot) { return batchCounts[getBatchKey(dateKey, person, slot)] || 1; }
+
+  function changeBatch(dateKey, person, slot, delta) {
+    const key = getBatchKey(dateKey, person, slot);
+    const current = batchCounts[key] || 1;
+    const next = Math.max(1, current + delta);
+    batchCounts[key] = next;
+    savePlan();
+    if (typeof App !== 'undefined') App.onPlannerChanged();
+    PlannerSection.refresh();
+  }
 
   // ── Init ──────────────────────────────────────────────────
   function init(people) {
@@ -85,7 +101,8 @@ const Planner = (() => {
         const meal = Object.values(allMeals).flat().find(m => m.name === mealName);
         if (!meal) return;
         const personForMeal = Sheets.getPersonForMealType(person, slot);
-        const macros = Sheets.calcMealMacrosPublic(meal, personForMeal, macroTable, 1);
+        const batch = getBatchCount(key, person.name, slot);
+        const macros = Sheets.calcMealMacrosPublic(meal, personForMeal, macroTable, batch);
         result[person.name].kcal    += macros.kcal;
         result[person.name].protein += macros.protein;
         result[person.name].carbs   += macros.carbs;
@@ -153,9 +170,10 @@ const Planner = (() => {
       '<div class="planner-person-label">' + person.name + '</div>' +
       '<div class="planner-slots">' +
         ['breakfast','lunch','dinner'].map(slot => {
-          const mealName = plan[key]?.meals[person.name]?.[slot] || null;
-          const safeKey  = key;
-          const safePerson = person.name.replace(/'/g,"\\'");
+          const mealName   = plan[key]?.meals[person.name]?.[slot] || null;
+          const safeKey    = key;
+          const safePerson = person.name.replace(/'/g,"\'");
+          const batchCount = mealName ? getBatchCount(safeKey, safePerson, slot) : 1;
           return '<div class="planner-slot ' + (mealName ? 'filled' : '') + '" onclick="Planner.openPicker(\'' + safeKey + '\',\'' + safePerson + '\',\'' + slot + '\')">' +
             '<div class="slot-icon">' + SLOT_ICONS[slot] + '</div>' +
             '<div class="slot-content">' +
@@ -163,7 +181,12 @@ const Planner = (() => {
                 ? '<div class="slot-meal">' + mealName + '</div>'
                 : '<div class="slot-empty">' + SLOT_LABELS[slot] + '</div>') +
             '</div>' +
-            (mealName ? '<button class="slot-clear" onclick="event.stopPropagation();Planner.clearMeal(\'' + safeKey + '\',\'' + safePerson + '\',\'' + slot + '\')">×</button>' : '') +
+            (mealName ? '<div class="slot-batch" onclick="event.stopPropagation()">' +
+              '<button class="slot-batch-btn" onclick="Planner.changeBatch(\'' + safeKey + '\',\'' + safePerson + '\',\'' + slot + '\',-1)">&#8722;</button>' +
+              '<span class="slot-batch-count">' + batchCount + '&times;</span>' +
+              '<button class="slot-batch-btn" onclick="Planner.changeBatch(\'' + safeKey + '\',\'' + safePerson + '\',\'' + slot + '\',1)">+</button>' +
+            '</div>' : '') +
+            (mealName ? '<button class="slot-clear" onclick="event.stopPropagation();Planner.clearMeal(\'' + safeKey + '\',\'' + safePerson + '\',\'' + slot + '\')">&#215;</button>' : '') +
           '</div>';
         }).join('') +
         // Snacks slot
@@ -331,7 +354,7 @@ const Planner = (() => {
     clearMeal(dateKey, person, 'snacks');
   }
 
-  return { init, render, getPlan, toggleDay, openPicker, openSnackPicker, closePicker, selectMeal, clearMeal, clearSnack };
+  return { init, render, getPlan, getBatchCount, changeBatch, toggleDay, openPicker, openSnackPicker, closePicker, selectMeal, clearMeal, clearSnack };
 })();
 
 // ── PlannerSection ────────────────────────────────────────
