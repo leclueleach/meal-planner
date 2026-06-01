@@ -70,22 +70,27 @@ const Planner = (() => {
     loadPlan();
     getWeekDays().forEach(d => ensureDay(toKey(d), people));
     savePlan();
-    // Set up Firebase listeners for real-time sync
-    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
-      FirebaseSync.listenPlan(remotePlan => {
-        if (!remotePlan || typeof remotePlan !== 'object') return;
-        plan = remotePlan;
-        // Ensure current week days exist
-        getWeekDays().forEach(d => ensureDay(toKey(d), window._plannerPeople || []));
-        if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
-        if (typeof App !== 'undefined') App.onPlannerChanged();
-      });
-      FirebaseSync.listenBatch(remoteBatch => {
-        if (!remoteBatch || typeof remoteBatch !== 'object') return;
-        batchCounts = remoteBatch;
-        if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
-      });
-    }
+  }
+
+  // Called after all data (people, meals) is fully loaded
+  function initSync() {
+    if (typeof FirebaseSync === 'undefined' || !FirebaseSync.isReady()) return;
+    const people = window._plannerPeople || [];
+    if (!people.length) return; // Don't sync until people are loaded
+
+    FirebaseSync.listenPlan(remotePlan => {
+      if (!remotePlan || typeof remotePlan !== 'object') return;
+      plan = remotePlan;
+      getWeekDays().forEach(d => ensureDay(toKey(d), people));
+      if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
+      if (typeof App !== 'undefined') App.onPlannerChanged();
+    });
+
+    FirebaseSync.listenBatch(remoteBatch => {
+      if (!remoteBatch || typeof remoteBatch !== 'object') return;
+      batchCounts = remoteBatch;
+      if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
+    });
   }
 
   // ── Toggles ───────────────────────────────────────────────
@@ -379,7 +384,7 @@ const Planner = (() => {
     clearMeal(dateKey, person, 'snacks');
   }
 
-  return { init, render, getPlan, getBatchCount, changeBatch, toggleDay, openPicker, openSnackPicker, closePicker, selectMeal, clearMeal, clearSnack };
+  return { init, initSync, render, getPlan, getBatchCount, changeBatch, toggleDay, openPicker, openSnackPicker, closePicker, selectMeal, clearMeal, clearSnack };
 })();
 
 // ── PlannerSection ────────────────────────────────────────
