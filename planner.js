@@ -41,6 +41,10 @@ const Planner = (() => {
   function savePlan() {
     try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(plan)); } catch(e) {}
     try { sessionStorage.setItem(BATCH_KEY, JSON.stringify(batchCounts)); } catch(e) {}
+    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+      FirebaseSync.savePlan(plan);
+      FirebaseSync.saveBatch(batchCounts);
+    }
   }
   function ensureDay(key, people) {
     if (!plan[key]) plan[key] = { enabled: false, meals: {} };
@@ -66,6 +70,22 @@ const Planner = (() => {
     loadPlan();
     getWeekDays().forEach(d => ensureDay(toKey(d), people));
     savePlan();
+    // Set up Firebase listeners for real-time sync
+    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+      FirebaseSync.listenPlan(remotePlan => {
+        if (!remotePlan) return;
+        plan = remotePlan;
+        // Ensure current week days exist
+        getWeekDays().forEach(d => ensureDay(toKey(d), window._plannerPeople || []));
+        if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
+        if (typeof App !== 'undefined') App.onPlannerChanged();
+      });
+      FirebaseSync.listenBatch(remoteBatch => {
+        if (!remoteBatch) return;
+        batchCounts = remoteBatch;
+        if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
+      });
+    }
   }
 
   // ── Toggles ───────────────────────────────────────────────
