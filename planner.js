@@ -73,7 +73,7 @@ const Planner = (() => {
     // Set up Firebase listeners for real-time sync
     if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
       FirebaseSync.listenPlan(remotePlan => {
-        if (!remotePlan) return;
+        if (!remotePlan || typeof remotePlan !== 'object') return;
         plan = remotePlan;
         // Ensure current week days exist
         getWeekDays().forEach(d => ensureDay(toKey(d), window._plannerPeople || []));
@@ -81,7 +81,7 @@ const Planner = (() => {
         if (typeof App !== 'undefined') App.onPlannerChanged();
       });
       FirebaseSync.listenBatch(remoteBatch => {
-        if (!remoteBatch) return;
+        if (!remoteBatch || typeof remoteBatch !== 'object') return;
         batchCounts = remoteBatch;
         if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
       });
@@ -121,7 +121,7 @@ const Planner = (() => {
     people.forEach(person => {
       result[person.name] = { kcal:0, protein:0, carbs:0, fat:0, fibre:0 };
       ['breakfast','lunch','dinner','snacks'].forEach(slot => {
-        const mealName = plan[key]?.meals[person.name]?.[slot];
+        const mealName = plan[key]?.meals?.[person.name]?.[slot];
         if (!mealName) return;
         const meal = Object.values(allMeals).flat().find(m => m.name === mealName);
         if (!meal) return;
