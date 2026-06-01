@@ -91,10 +91,11 @@ const App = (() => {
         seen[p.name] = true;
         return true;
       });
-      window._plannerPeople = uniquePeople;
+      window._plannerPeople     = uniquePeople;
       window._plannerMeals      = { breakfast, lunch, dinner, snacks: plannerSnacks };
       window._plannerMacroTable = macroTable;
-      Planner.init(people);
+      state.people = uniquePeople;
+      Planner.init(uniquePeople);
       loadMealSelections();
       loadChecked();
       rebuildList();
