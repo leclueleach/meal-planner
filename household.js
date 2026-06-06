@@ -68,6 +68,7 @@ const Household = (() => {
     if (el) el.classList.toggle('checked', !!checked[id]);
     updateCatCount(id);
     updateProgress();
+    if (typeof App !== 'undefined' && App.updateOverallProgress) App.updateOverallProgress();
   }
 
   function changeQty(id, delta) {
@@ -81,6 +82,7 @@ const Household = (() => {
     if (cardEl) cardEl.classList.toggle('qty-active', next > 0);
     updateCatCount(id);
     updateProgress();
+    if (typeof App !== 'undefined' && App.updateOverallProgress) App.updateOverallProgress();
   }
 
   function addManualItem(category, name) {
@@ -257,5 +259,6 @@ const Household = (() => {
     input.focus();
   }
 
-  return { init, mount, render, toggleItem, changeQty, addManualItem, removeManualItem, clearManualItems, clearAll, uncheckAll, startEdit, saveEdit, cancelEdit, submitQuickAdd };
+  function getState() { return { sheetItems, manualItems, checked, quantities }; }
+  return { init, mount, render, toggleItem, changeQty, addManualItem, removeManualItem, clearManualItems, clearAll, uncheckAll, startEdit, saveEdit, cancelEdit, submitQuickAdd, getState };
 })();
