@@ -372,5 +372,36 @@ const Sheets = (() => {
     return getMeals(CONFIG.TABS.PLANNER_SNACKS);
   }
 
-  return { getPeople, getMeals, getCookingSteps, getMacroTable, getHouseholdItems, getSnacksItems, getPlannerSnacks, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros, getPersonForMealType };
+  // ── Write (append rows to a tab) ────────────────────────
+  async function appendRows(tabName, rows) {
+    const token = Auth.getToken();
+    if (!token) throw new Error('Not authenticated');
+    const url = `${BASE_URL}/${CONFIG.SHEET_ID}/values/${encodeURIComponent(tabName + '!A1')}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&key=${CONFIG.API_KEY}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ values: rows }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'Sheets write error');
+    }
+    return res.json();
+  }
+
+  // ── Import meal JSON ─────────────────────────────────────
+  async function importMealData(json) {
+    const results = [];
+    for (const [tabName, rows] of Object.entries(json.tabs)) {
+      if (!rows || !rows.length) continue;
+      await appendRows(tabName, rows);
+      results.push(tabName + ': ' + rows.length + ' rows added');
+    }
+    return results;
+  }
+
+  return { getPeople, getMeals, getCookingSteps, getMacroTable, getHouseholdItems, getSnacksItems, getPlannerSnacks, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros, getPersonForMealType, appendRows, importMealData };
 })();
