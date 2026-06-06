@@ -1,12 +1,10 @@
 // ============================================================
 //  auth.js — Google OAuth 2.0 login / logout / token handling
 // ============================================================
-
 const Auth = (() => {
   let accessToken = null;
   let tokenClient = null;
 
-  // Called once Google Identity Services script has loaded
   function init(onSignedIn, onSignedOut) {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CONFIG.GOOGLE_CLIENT_ID,
@@ -18,53 +16,52 @@ const Auth = (() => {
           return;
         }
         accessToken = response.access_token;
-        // Store expiry time
         const expiresAt = Date.now() + (response.expires_in * 1000);
-        sessionStorage.setItem('gis_token', accessToken);
-        sessionStorage.setItem('gis_expires', expiresAt);
+        localStorage.setItem('gis_token', accessToken);
+        localStorage.setItem('gis_expires', expiresAt);
         onSignedIn(accessToken);
+      },
+      error_callback: (error) => {
+        // Silent sign-in failed — show login screen
+        console.log('Silent sign-in failed:', error);
+        onSignedOut();
       },
     });
 
-    // Check for existing session token
-    const stored = sessionStorage.getItem('gis_token');
-    const expires = sessionStorage.getItem('gis_expires');
+    // Check for existing stored token first
+    const stored  = localStorage.getItem('gis_token');
+    const expires = localStorage.getItem('gis_expires');
     if (stored && expires && Date.now() < parseInt(expires)) {
+      // Valid stored token — go straight in
       accessToken = stored;
       onSignedIn(accessToken);
     } else {
-      onSignedOut();
+      // No valid token — try silent sign-in first
+      // If that fails, error_callback will call onSignedOut() to show login screen
+      try {
+        tokenClient.requestAccessToken({ prompt: '' });
+      } catch(e) {
+        onSignedOut();
+      }
     }
   }
 
   function signIn() {
-    if (!tokenClient) {
-      console.error('Auth not initialised yet.');
-      return;
-    }
+    if (!tokenClient) { console.error('Auth not initialised yet.'); return; }
     tokenClient.requestAccessToken({ prompt: 'consent' });
   }
 
   function signOut() {
     if (accessToken) {
-      google.accounts.oauth2.revoke(accessToken, () => {
-        accessToken = null;
-        sessionStorage.removeItem('gis_token');
-        sessionStorage.removeItem('gis_expires');
-      });
+      google.accounts.oauth2.revoke(accessToken, () => { accessToken = null; });
     }
     accessToken = null;
-    sessionStorage.removeItem('gis_token');
-    sessionStorage.removeItem('gis_expires');
+    localStorage.removeItem('gis_token');
+    localStorage.removeItem('gis_expires');
   }
 
-  function getToken() {
-    return accessToken;
-  }
-
-  function isSignedIn() {
-    return !!accessToken;
-  }
+  function getToken()   { return accessToken; }
+  function isSignedIn() { return !!accessToken; }
 
   return { init, signIn, signOut, getToken, isSignedIn };
 })();
