@@ -7,6 +7,12 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f1f3d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Meal Planner">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -40,6 +46,7 @@
     <button class="section-tab active" data-section="shopping">🛒 Shopping</button>
     <button class="section-tab" data-section="recipes">📖 Recipes</button>
     <button class="section-tab" data-section="planner">📅 Planner</button>
+    <button class="section-tab" data-section="import">⬆️ Import</button>
   </div>
 
   <!-- ══ SHOPPING SECTION ══════════════════════════════════ -->
@@ -116,6 +123,37 @@
     </main>
   </div>
 
+  <!-- ══ IMPORT SECTION ══════════════════════════════════ -->
+  <div id="import-section" style="display:none">
+    <main class="app-main">
+      <div style="padding:20px 16px">
+        <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--accent);margin-bottom:6px">Import Meal Data</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:20px;line-height:1.6">Upload a meal JSON file to automatically append it to your Google Sheet. The file will add rows to the correct tabs (Lunch, Dinner, Cooking, Macros etc).</div>
+
+        <div id="import-drop-zone" style="border:2px dashed var(--border2);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color 0.15s" onclick="document.getElementById('import-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border2)'" ondrop="App.handleImportDrop(event)">
+          <div style="font-size:2rem;margin-bottom:8px">📂</div>
+          <div style="font-size:0.88rem;color:var(--text-mid)">Tap to choose a JSON file</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">or drag and drop here</div>
+        </div>
+        <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="App.handleImportFile(this)" />
+
+        <div id="import-preview" style="display:none;margin-top:16px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px">
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Preview</div>
+          <div id="import-preview-content"></div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn btn-primary" style="flex:1" onclick="App.confirmImport()">⬆️ Import to Sheet</button>
+            <button class="btn btn-ghost btn-sm" onclick="App.cancelImport()">Cancel</button>
+          </div>
+        </div>
+
+        <div id="import-result" style="display:none;margin-top:16px;background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px">
+          <div id="import-result-content"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px;width:100%" onclick="App.resetImport()">Import another</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
 </div><!-- end screen-app -->
 
 <script src="https://accounts.google.com/gsi/client" onload="onGisLoad()" async defer></script>
@@ -128,5 +166,14 @@
 <script src="planner.js"></script>
 <script src="app.js"></script>
 
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/meal-planner/sw.js')
+        .then(reg => console.log('SW registered'))
+        .catch(err => console.log('SW error:', err));
+    });
+  }
+</script>
 </body>
 </html>
