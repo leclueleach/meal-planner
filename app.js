@@ -202,7 +202,7 @@ const App = (() => {
     state.checked[key] = !state.checked[key];
     const el = document.querySelector('[data-key="' + CSS.escape(key) + '"]');
     if (el) el.classList.toggle('checked', !!state.checked[key]);
-    updateCatCounts(); renderProgress();
+    updateCatCounts(); renderProgress(); updateOverallProgress();
     saveChecked();
   }
 
@@ -287,6 +287,7 @@ const App = (() => {
     renderShoppingTab();
     renderShoppingHeader();
     renderBadges();
+    updateOverallProgress();
     if (state.activeSection === 'recipes') renderRecipesSection();
     if (state.activeSection === 'planner') PlannerSection.refresh();
   }
@@ -307,6 +308,7 @@ const App = (() => {
     if (tab === 'snacks-shop') Snacks.render();
     document.getElementById('screen-snacks-shop').style.display   = tab === 'snacks-shop' ? 'block' : 'none';
     if (tab === 'meals') { renderList(); renderProgress(); }
+    updateOverallProgress();
   }
 
   function renderBadges() {
@@ -632,10 +634,51 @@ const App = (() => {
     document.getElementById('import-file-input').value = '';
   }
 
+  // ── Overall shopping progress ────────────────────────────
+  function updateOverallProgress() {
+    // Meals
+    const mealsTotal  = state.shoppingList.length;
+    const mealsDone   = state.shoppingList.filter(i => state.checked[itemKey(i)]).length;
+    const mealsLeft   = mealsTotal - mealsDone;
+
+    // Household
+    const hState      = (typeof Household !== 'undefined' && Household.getState) ? Household.getState() : { sheetItems:[], manualItems:[], checked:{}, quantities:{} };
+    const hAll        = [...hState.sheetItems, ...hState.manualItems];
+    const hNeeded     = hAll.filter(i => (hState.quantities[i.id] || 0) >= 1);
+    const hDone       = hNeeded.filter(i => hState.checked[i.id]).length;
+    const hLeft       = hNeeded.length - hDone;
+
+    // Snacks
+    const sState      = (typeof Snacks !== 'undefined' && Snacks.getState) ? Snacks.getState() : { sheetItems:[], manualItems:[], checked:{}, quantities:{} };
+    const sAll        = [...sState.sheetItems, ...sState.manualItems];
+    const sNeeded     = sAll.filter(i => (sState.quantities[i.id] || 0) >= 1);
+    const sDone       = sNeeded.filter(i => sState.checked[i.id]).length;
+    const sLeft       = sNeeded.length - sDone;
+
+    const total = mealsTotal + hNeeded.length + sNeeded.length;
+    const done  = mealsDone + hDone + sDone;
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+
+    const fill  = document.getElementById('overall-progress-fill');
+    const label = document.getElementById('overall-progress-label');
+    if (fill)  fill.style.width = pct + '%';
+    if (label) label.textContent = done + ' of ' + total + ' ticked';
+
+    // Tab badges — show remaining unticked
+    const badgeH = document.getElementById('badge-household');
+    const badgeS = document.getElementById('badge-snacks');
+    if (badgeH) { badgeH.textContent = hLeft; badgeH.style.display = hLeft > 0 ? 'inline-flex' : 'none'; }
+    if (badgeS) { badgeS.textContent = sLeft; badgeS.style.display = sLeft > 0 ? 'inline-flex' : 'none'; }
+
+    // Meals badge shows unticked meals items
+    const badgeM = document.getElementById('badge-meals');
+    if (badgeM) { badgeM.textContent = mealsLeft; badgeM.style.display = mealsLeft > 0 ? 'inline-flex' : 'none'; }
+  }
+
   // Public API — called by Planner when plan changes to refresh shopping list
   function onPlannerChanged() { rebuildList(); renderBadges(); if (state.activeSection === 'shopping') { renderList(); renderProgress(); } }
 
-  return { init, toggleItem, clearChecked: clearChecked, setRecipePersonFilter, openMeal, closeMeal, startTimer, pauseTimer, toggleStepComplete, changeCookServings, setCookFor, onPlannerChanged, handleImportFile, handleImportDrop, confirmImport, cancelImport, resetImport };
+  return { init, toggleItem, clearChecked: clearChecked, setRecipePersonFilter, openMeal, closeMeal, startTimer, pauseTimer, toggleStepComplete, changeCookServings, setCookFor, onPlannerChanged, handleImportFile, handleImportDrop, confirmImport, cancelImport, resetImport, updateOverallProgress };
 })();
 
 function onGisLoad() { App.init(); }
