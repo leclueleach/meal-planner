@@ -29,8 +29,8 @@ const CONFIG = {
     PLANNER_SNACKS: 'Planner Snacks',
   },
 
-  // OAuth scopes — read-only access to Sheets is all we need
-  SCOPES: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+  // OAuth scopes — read and write access to Sheets is all we need
+  SCOPES: 'https://www.googleapis.com/auth/spreadsheets',
 
   // Your GitHub Pages URL
   REDIRECT_URI: 'https://leclueleach.github.io/meal-planner',
