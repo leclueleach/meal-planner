@@ -37,6 +37,7 @@ const App = (() => {
     document.getElementById('btn-refresh-r').addEventListener('click', loadData);
     document.getElementById('btn-uncheck').addEventListener('click', clearChecked);
     document.querySelectorAll('.section-tab').forEach(t => t.addEventListener('click', () => switchSection(t.dataset.section)));
+    importState = { data: null };
     document.querySelectorAll('.nav-tab').forEach(t => t.addEventListener('click', () => switchShopTab(t.dataset.tab)));
     document.querySelectorAll('.rec-tab').forEach(t => t.addEventListener('click', () => switchRecipesTab(t.dataset.tab)));
     PlannerSection.mount(document.getElementById('planner-content'));
@@ -168,6 +169,7 @@ const App = (() => {
     document.getElementById('shopping-section').style.display = section === 'shopping' ? 'flex' : 'none';
     document.getElementById('recipes-section').style.display  = section === 'recipes'  ? 'flex' : 'none';
     document.getElementById('planner-section').style.display  = section === 'planner'  ? 'flex' : 'none';
+    document.getElementById('import-section').style.display   = section === 'import'   ? 'flex' : 'none';
     if (section === 'recipes') renderRecipesSection();
     if (section === 'planner') PlannerSection.refresh();
     if (section === 'shopping') { rebuildList(); renderShoppingTab(); }
@@ -542,10 +544,98 @@ const App = (() => {
     if (msg) { el.textContent = msg; el.style.display = 'block'; } else el.style.display = 'none';
   }
 
+  // ── Import ───────────────────────────────────────────────
+  let importState = { data: null };
+
+  function handleImportFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    readImportFile(file);
+  }
+
+  function handleImportDrop(event) {
+    event.preventDefault();
+    document.getElementById('import-drop-zone').style.borderColor = 'var(--border2)';
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    readImportFile(file);
+  }
+
+  function readImportFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        importState.data = data;
+        showImportPreview(data);
+      } catch(err) {
+        alert('Invalid JSON file. Please check the file and try again.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function showImportPreview(data) {
+    const preview = document.getElementById('import-preview');
+    const content = document.getElementById('import-preview-content');
+    if (!preview || !content) return;
+    let html = '<div style="font-size:0.88rem;color:var(--text);margin-bottom:10px;font-weight:500">' + (data.meal || 'Unknown meal') + '</div>';
+    Object.entries(data.tabs || {}).forEach(([tab, rows]) => {
+      html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--border);font-size:0.78rem">' +
+        '<span style="color:var(--text-muted)">' + tab + '</span>' +
+        '<span style="color:var(--accent)">' + (rows ? rows.length : 0) + ' rows</span>' +
+      '</div>';
+    });
+    content.innerHTML = html;
+    preview.style.display = 'block';
+    document.getElementById('import-result').style.display = 'none';
+  }
+
+  async function confirmImport() {
+    if (!importState.data) return;
+    const btn = document.querySelector('#import-preview .btn-primary');
+    if (btn) { btn.textContent = 'Importing...'; btn.disabled = true; }
+    try {
+      const results = await Sheets.importMealData(importState.data);
+      showImportResult(true, results);
+    } catch(err) {
+      showImportResult(false, [err.message]);
+    } finally {
+      if (btn) { btn.textContent = '⬆️ Import to Sheet'; btn.disabled = false; }
+    }
+  }
+
+  function showImportResult(success, lines) {
+    const resultEl  = document.getElementById('import-result');
+    const contentEl = document.getElementById('import-result-content');
+    const preview   = document.getElementById('import-preview');
+    if (!resultEl || !contentEl) return;
+    preview.style.display = 'none';
+    const icon = success ? '✅' : '❌';
+    const colour = success ? 'var(--accent)' : 'var(--error)';
+    contentEl.innerHTML = '<div style="font-size:0.88rem;color:' + colour + ';margin-bottom:8px;font-weight:500">' + icon + ' ' + (success ? 'Import successful!' : 'Import failed') + '</div>' +
+      lines.map(l => '<div style="font-size:0.75rem;color:var(--text-muted);padding:2px 0">' + l + '</div>').join('');
+    resultEl.style.display = 'block';
+    if (success) { importState.data = null; loadData(); }
+  }
+
+  function cancelImport() {
+    importState.data = null;
+    document.getElementById('import-preview').style.display = 'none';
+    document.getElementById('import-file-input').value = '';
+  }
+
+  function resetImport() {
+    importState.data = null;
+    document.getElementById('import-preview').style.display = 'none';
+    document.getElementById('import-result').style.display = 'none';
+    document.getElementById('import-file-input').value = '';
+  }
+
   // Public API — called by Planner when plan changes to refresh shopping list
   function onPlannerChanged() { rebuildList(); renderBadges(); if (state.activeSection === 'shopping') { renderList(); renderProgress(); } }
 
-  return { init, toggleItem, clearChecked: clearChecked, setRecipePersonFilter, openMeal, closeMeal, startTimer, pauseTimer, toggleStepComplete, changeCookServings, setCookFor, onPlannerChanged };
+  return { init, toggleItem, clearChecked: clearChecked, setRecipePersonFilter, openMeal, closeMeal, startTimer, pauseTimer, toggleStepComplete, changeCookServings, setCookFor, onPlannerChanged, handleImportFile, handleImportDrop, confirmImport, cancelImport, resetImport };
 })();
 
 function onGisLoad() { App.init(); }
