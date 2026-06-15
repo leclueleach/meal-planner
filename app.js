@@ -105,6 +105,20 @@ const App = (() => {
       // Now safe to start Firebase sync — people and meals are loaded
       Planner.initSync();
       if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+        FirebaseSync.listenChecked(remote => {
+          if (!remote || typeof remote !== 'object') return;
+          state.checked = remote;
+          if (state.activeSection === 'shopping' && state.shopTab === 'meals') {
+            renderList(); renderProgress();
+          }
+        });
+        FirebaseSync.listenCollapsed(remote => {
+          if (!remote || typeof remote !== 'object') return;
+          collapsedCats = remote;
+          if (state.activeSection === 'shopping' && state.shopTab === 'meals') renderList();
+        });
+      }
+      if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
         FirebaseSync.listenChecked(remoteChecked => {
           if (!remoteChecked || typeof remoteChecked !== 'object') return;
           state.checked = remoteChecked;
@@ -520,15 +534,23 @@ const App = (() => {
 
   function saveCollapsed() {
     try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedCats)); } catch(e) {}
+    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+      FirebaseSync.saveCollapsed(collapsedCats);
+    }
   }
   function loadCollapsed() {
     try { const s = localStorage.getItem(COLLAPSED_KEY); if (s) collapsedCats = JSON.parse(s); } catch(e) { collapsedCats = {}; }
   }
-  function toggleCollapsed(cat) {
-    collapsedCats[cat] = !collapsedCats[cat];
+  function toggleCollapsed(headerEl) {
+    const catEl = headerEl.parentElement;
+    const catName = catEl.dataset.cat;
+    collapsedCats[catName] = !collapsedCats[catName];
     saveCollapsed();
-    const el = document.getElementById('cat-' + CSS.escape(cat));
-    if (el) el.classList.toggle('collapsed', !!collapsedCats[cat]);
+    catEl.classList.toggle('collapsed', !!collapsedCats[catName]);
+    // Sync to Firebase
+    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+      FirebaseSync.saveCollapsed(collapsedCats);
+    }
   }
 
   function saveChecked() {
