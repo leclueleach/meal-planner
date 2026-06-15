@@ -6,6 +6,7 @@ const Planner = (() => {
 
   let plan = {};
   let batchCounts = {}; // { 'dateKey|person|slot': count }
+  let syncReady = false;
   let activePicker = null;
   const STORAGE_KEY  = 'mealplanner_plan_v1';
   const BATCH_KEY    = 'mealplanner_batch_v1';
@@ -41,7 +42,7 @@ const Planner = (() => {
   function savePlan() {
     try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(plan)); } catch(e) {}
     try { sessionStorage.setItem(BATCH_KEY, JSON.stringify(batchCounts)); } catch(e) {}
-    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+    if (syncReady && typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
       FirebaseSync.savePlan(plan);
       FirebaseSync.saveBatch(batchCounts);
     }
@@ -90,22 +91,30 @@ const Planner = (() => {
     let firstBatchFire = true;
 
     FirebaseSync.listenPlan(remotePlan => {
-      // Skip the first immediate fire — app already rendered from local data
-      if (firstPlanFire) { firstPlanFire = false; return; }
-      if (!remotePlan || typeof remotePlan !== 'object') return;
-      const people = (window._plannerPeople || []).filter(p => p && p.name);
-      plan = remotePlan;
-      getWeekDays().forEach(d => ensureDay(toKey(d), people));
-      if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
-      if (typeof App !== 'undefined') App.onPlannerChanged();
+      if (remotePlan && typeof remotePlan === 'object') {
+        const people = (window._plannerPeople || []).filter(p => p && p.name);
+        plan = remotePlan;
+        getWeekDays().forEach(d => ensureDay(toKey(d), people));
+        try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(plan)); } catch(e) {}
+        if (!firstPlanFire) {
+          if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
+          if (typeof App !== 'undefined') App.onPlannerChanged();
+        }
+      }
+      if (firstPlanFire) { firstPlanFire = false; syncReady = true; }
     });
 
     FirebaseSync.listenBatch(remoteBatch => {
-      if (firstBatchFire) { firstBatchFire = false; return; }
-      if (!remoteBatch || typeof remoteBatch !== 'object') return;
-      batchCounts = remoteBatch;
-      if (typeof PlannerSection !== 'undefined') PlannerSection.refresh();
+      if (remoteBatch && typeof remoteBatch === 'object') {
+        batchCounts = remoteBatch;
+        try { sessionStorage.setItem(BATCH_KEY, JSON.stringify(batchCounts)); } catch(e) {}
+        if (!firstBatchFire && typeof PlannerSection !== 'undefined') PlannerSection.refresh();
+      }
+      if (firstBatchFire) { firstBatchFire = false; }
     });
+
+    // Safety — enable sync after 2s even if listeners never fire (empty DB)
+    setTimeout(() => { syncReady = true; }, 2000);
   }
 
   // ── Toggles ───────────────────────────────────────────────
