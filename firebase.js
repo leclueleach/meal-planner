@@ -101,6 +101,14 @@ const FirebaseSync = (() => {
   async function saveSnacksChecked(checked) { await set('snacks_checked', checked); }
   function listenSnacksChecked(callback)    { listen('snacks_checked', callback); }
 
+  // ── Shopping checked ──────────────────────────────────────
+  async function saveChecked(checked) { await set('checked', checked); }
+  function listenChecked(callback)    { listen('checked', callback); }
+
+  // ── Collapsed categories ──────────────────────────────────
+  async function saveCollapsed(collapsed) { await set('collapsed', collapsed); }
+  function listenCollapsed(callback)      { listen('collapsed', callback); }
+
   // ── Manual items ──────────────────────────────────────────
   async function saveHouseholdManual(items) { await set('household_manual', items); }
   function listenHouseholdManual(callback)  { listen('household_manual', callback); }
@@ -112,6 +120,7 @@ const FirebaseSync = (() => {
     init, isReady,
     savePlan, saveBatch, listenPlan, listenBatch,
     saveChecked, listenChecked,
+    saveCollapsed, listenCollapsed,
     saveHouseholdQty, listenHouseholdQty,
     saveSnacksQty, listenSnacksQty,
     saveHouseholdChecked, listenHouseholdChecked,
