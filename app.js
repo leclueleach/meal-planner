@@ -99,6 +99,7 @@ const App = (() => {
       Planner.init(uniquePeople);
       loadMealSelections();
       loadChecked();
+      loadCollapsed();
       rebuildList();
       renderAll();
       // Now safe to start Firebase sync — people and meals are loaded
@@ -512,8 +513,23 @@ const App = (() => {
   }
 
   // ── Persist ───────────────────────────────────────────────
-  const CHECKED_KEY  = 'mealplanner_checked_v1';
-  const SERVINGS_KEY = 'mealplanner_servings_v1';
+  const CHECKED_KEY   = 'mealplanner_checked_v1';
+  const SERVINGS_KEY  = 'mealplanner_servings_v1';
+  const COLLAPSED_KEY = 'mealplanner_collapsed_v1';
+  let collapsedCats   = {}; // { 'category_name': true }
+
+  function saveCollapsed() {
+    try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedCats)); } catch(e) {}
+  }
+  function loadCollapsed() {
+    try { const s = localStorage.getItem(COLLAPSED_KEY); if (s) collapsedCats = JSON.parse(s); } catch(e) { collapsedCats = {}; }
+  }
+  function toggleCollapsed(cat) {
+    collapsedCats[cat] = !collapsedCats[cat];
+    saveCollapsed();
+    const el = document.getElementById('cat-' + CSS.escape(cat));
+    if (el) el.classList.toggle('collapsed', !!collapsedCats[cat]);
+  }
 
   function saveChecked() {
     try { localStorage.setItem(CHECKED_KEY, JSON.stringify(state.checked)); } catch(e) {}
@@ -676,9 +692,16 @@ const App = (() => {
   }
 
   // Public API — called by Planner when plan changes to refresh shopping list
-  function onPlannerChanged() { rebuildList(); renderBadges(); if (state.activeSection === 'shopping') { renderList(); renderProgress(); } }
+  function onPlannerChanged() {
+    // Clear checked items when plan changes — fresh list each time
+    state.checked = {};
+    saveChecked();
+    rebuildList();
+    renderBadges();
+    if (state.activeSection === 'shopping') { renderList(); renderProgress(); }
+  }
 
-  return { init, toggleItem, clearChecked: clearChecked, setRecipePersonFilter, openMeal, closeMeal, startTimer, pauseTimer, toggleStepComplete, changeCookServings, setCookFor, onPlannerChanged, handleImportFile, handleImportDrop, confirmImport, cancelImport, resetImport, updateOverallProgress };
+  return { init, toggleItem, clearChecked: clearChecked, setRecipePersonFilter, openMeal, closeMeal, startTimer, pauseTimer, toggleStepComplete, changeCookServings, setCookFor, onPlannerChanged, handleImportFile, handleImportDrop, confirmImport, cancelImport, resetImport, updateOverallProgress, toggleCollapsed };
 })();
 
 function onGisLoad() { App.init(); }
