@@ -105,18 +105,29 @@ const App = (() => {
       // Now safe to start Firebase sync — people and meals are loaded
       Planner.initSync();
       if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+        let firstCheckedFire   = true;
+        let firstCollapsedFire = true;
         FirebaseSync.listenChecked(remote => {
-          if (!remote || typeof remote !== 'object') return;
-          state.checked = remote;
-          if (state.activeSection === 'shopping' && state.shopTab === 'meals') {
-            renderList(); renderProgress();
+          if (remote && typeof remote === 'object') {
+            state.checked = remote;
+            try { localStorage.setItem(CHECKED_KEY, JSON.stringify(state.checked)); } catch(e) {}
+            if (state.activeSection === 'shopping' && state.shopTab === 'meals') { renderList(); renderProgress(); }
+            updateOverallProgress();
           }
+          if (firstCheckedFire) { firstCheckedFire = false; firebaseSyncReady = true; }
         });
         FirebaseSync.listenCollapsed(remote => {
-          if (!remote || typeof remote !== 'object') return;
-          collapsedCats = remote;
-          if (state.activeSection === 'shopping' && state.shopTab === 'meals') renderList();
+          if (remote && typeof remote === 'object') {
+            collapsedCats = remote;
+            try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedCats)); } catch(e) {}
+            if (state.activeSection === 'shopping' && state.shopTab === 'meals') renderList();
+          }
+          if (firstCollapsedFire) { firstCollapsedFire = false; }
         });
+        // Safety — enable sync after 2s even if listeners never fire (empty DB)
+        setTimeout(() => { firebaseSyncReady = true; }, 2000);
+      } else {
+        firebaseSyncReady = true;
       }
       if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
         FirebaseSync.listenChecked(remoteChecked => {
@@ -531,10 +542,11 @@ const App = (() => {
   const SERVINGS_KEY  = 'mealplanner_servings_v1';
   const COLLAPSED_KEY = 'mealplanner_collapsed_v1';
   let collapsedCats   = {}; // { 'category_name': true }
+  let firebaseSyncReady = false; // prevents saving before initial Firebase load completes
 
   function saveCollapsed() {
     try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedCats)); } catch(e) {}
-    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+    if (firebaseSyncReady && typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
       FirebaseSync.saveCollapsed(collapsedCats);
     }
   }
@@ -547,15 +559,11 @@ const App = (() => {
     collapsedCats[catName] = !collapsedCats[catName];
     saveCollapsed();
     catEl.classList.toggle('collapsed', !!collapsedCats[catName]);
-    // Sync to Firebase
-    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
-      FirebaseSync.saveCollapsed(collapsedCats);
-    }
   }
 
   function saveChecked() {
     try { localStorage.setItem(CHECKED_KEY, JSON.stringify(state.checked)); } catch(e) {}
-    if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
+    if (firebaseSyncReady && typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
       FirebaseSync.saveChecked(state.checked);
     }
   }
@@ -715,10 +723,15 @@ const App = (() => {
 
   // Public API — called by Planner when plan changes to refresh shopping list
   function onPlannerChanged() {
-    // Clear checked items when plan changes — fresh list each time
-    state.checked = {};
-    saveChecked();
     rebuildList();
+    // Prune checked entries for items no longer on the shopping list
+    const validKeys = {};
+    state.shoppingList.forEach(i => { validKeys[itemKey(i)] = true; });
+    let changed = false;
+    Object.keys(state.checked).forEach(k => {
+      if (!validKeys[k]) { delete state.checked[k]; changed = true; }
+    });
+    if (changed) saveChecked();
     renderBadges();
     if (state.activeSection === 'shopping') { renderList(); renderProgress(); }
   }
