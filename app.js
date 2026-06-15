@@ -105,8 +105,12 @@ const App = (() => {
       // Now safe to start Firebase sync — people and meals are loaded
       Planner.initSync();
       if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
-        let firstCheckedFire   = true;
-        let firstCollapsedFire = true;
+        let gotChecked   = false;
+        let gotCollapsed = false;
+        function maybeEnableSync() {
+          // Enable saving only once we've heard back on BOTH checked and collapsed
+          if (gotChecked && gotCollapsed) firebaseSyncReady = true;
+        }
         FirebaseSync.listenChecked(remote => {
           if (remote && typeof remote === 'object') {
             state.checked = remote;
@@ -114,7 +118,7 @@ const App = (() => {
             if (state.activeSection === 'shopping' && state.shopTab === 'meals') { renderList(); renderProgress(); }
             updateOverallProgress();
           }
-          if (firstCheckedFire) { firstCheckedFire = false; firebaseSyncReady = true; }
+          gotChecked = true; maybeEnableSync();
         });
         FirebaseSync.listenCollapsed(remote => {
           if (remote && typeof remote === 'object') {
@@ -122,21 +126,12 @@ const App = (() => {
             try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedCats)); } catch(e) {}
             if (state.activeSection === 'shopping' && state.shopTab === 'meals') renderList();
           }
-          if (firstCollapsedFire) { firstCollapsedFire = false; }
+          gotCollapsed = true; maybeEnableSync();
         });
-        // Safety — enable sync after 2s even if listeners never fire (empty DB)
-        setTimeout(() => { firebaseSyncReady = true; }, 2000);
+        // Safety net — if Firebase never responds within 5s, enable sync anyway
+        setTimeout(() => { firebaseSyncReady = true; }, 5000);
       } else {
         firebaseSyncReady = true;
-      }
-      if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
-        FirebaseSync.listenChecked(remoteChecked => {
-          if (!remoteChecked || typeof remoteChecked !== 'object') return;
-          state.checked = remoteChecked;
-          if (state.activeSection === 'shopping' && state.shopTab === 'meals') {
-            renderList(); renderProgress();
-          }
-        });
       }
     } catch (err) {
       setError('Could not load data from Google Sheets. ' + err.message);
@@ -355,8 +350,9 @@ const App = (() => {
     const catIcons = { 'Proteins':'🥩','Fresh Produce':'🥬','Canned & Jarred':'🥫','Stocks & Liquids':'🍲','Pantry & Spices':'🫙','Fats':'🫒','Veg':'🥦','Veg/Fruit':'🍓','Carbs':'🌾','Carbs (Week 1)':'🌾' };
     el.innerHTML = Object.entries(cats).map(([cat, catItems]) => {
       const catDone = catItems.filter(i => state.checked[itemKey(i)]).length;
-      return '<div class="category" id="cat-' + CSS.escape(cat) + '">' +
-        '<div class="category-header" onclick="this.parentElement.classList.toggle(\'collapsed\')">' +
+      const isCollapsed = !!collapsedCats[cat];
+      return '<div class="category ' + (isCollapsed ? 'collapsed' : '') + '" id="cat-' + CSS.escape(cat) + '" data-cat="' + cat.replace(/"/g,'&quot;') + '">' +
+        '<div class="category-header" onclick="App.toggleCollapsed(this)">' +
           '<div class="category-title">' +
             '<span class="category-icon">' + (catIcons[cat] || '📦') + '</span>' +
             '<span class="category-name">' + cat + '</span>' +
