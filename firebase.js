@@ -116,6 +116,12 @@ const FirebaseSync = (() => {
   async function saveSnacksManual(items) { await set('snacks_manual', items); }
   function listenSnacksManual(callback)  { listen('snacks_manual', callback); }
 
+  // ── Baking (Other / make anytime) ─────────────────────────
+  async function saveBakingSelected(sel) { await set('baking_selected', sel); }
+  function listenBakingSelected(callback) { listen('baking_selected', callback); }
+  async function saveBakingBatch(b) { await set('baking_batch', b); }
+  function listenBakingBatch(callback) { listen('baking_batch', callback); }
+
   return {
     init, isReady,
     savePlan, saveBatch, listenPlan, listenBatch,
@@ -127,5 +133,7 @@ const FirebaseSync = (() => {
     saveSnacksChecked, listenSnacksChecked,
     saveHouseholdManual, listenHouseholdManual,
     saveSnacksManual, listenSnacksManual,
+    saveBakingSelected, listenBakingSelected,
+    saveBakingBatch, listenBakingBatch,
   };
 })();
