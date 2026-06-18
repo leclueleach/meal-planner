@@ -289,11 +289,22 @@ const Sheets = (() => {
     const agg = {};
 
     Object.entries(allMeals).forEach(([mealType, meals]) => {
+      const isBaking = mealType === 'baking';
       meals.filter(r => r.include).forEach(meal => {
         const timesToMake = mealServings[meal.name] || 1;
         meal.ingredients.forEach(ing => {
           const isProtein = ing.category === 'Proteins';
           const isCarb    = ing.category.startsWith('Carbs');
+          // Baking ingredients are shared (not per-person) — add once, scaled by batch only
+          if (isBaking) {
+            const key = `${ing.category}|${ing.ingredient}|${ing.unit || ''}`;
+            if (!agg[key]) {
+              agg[key] = { category: ing.category, name: ing.ingredient, unit: ing.unit, qty: 0, hasQty: false, meals: new Set(), mealType, notes: ing.notes, people: new Set() };
+            }
+            if (ing.qty !== null) { agg[key].qty += ing.qty * timesToMake; agg[key].hasQty = true; }
+            agg[key].meals.add(meal.name);
+            return;
+          }
           const applicablePeople = selectedPeople.filter(p => {
             if (ing.person === 'Both' || meal.person === 'Both') return true;
             return p.name === ing.person || p.name === meal.person;
@@ -372,6 +383,10 @@ const Sheets = (() => {
     return getMeals(CONFIG.TABS.PLANNER_SNACKS);
   }
 
+  async function getBaking() {
+    return getMeals(CONFIG.TABS.BAKING);
+  }
+
   // ── Write (append rows to a tab) ────────────────────────
   async function appendRows(tabName, rows) {
     const token = Auth.getToken();
@@ -403,5 +418,5 @@ const Sheets = (() => {
     return results;
   }
 
-  return { getPeople, getMeals, getCookingSteps, getMacroTable, getHouseholdItems, getSnacksItems, getPlannerSnacks, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros, getPersonForMealType, appendRows, importMealData };
+  return { getPeople, getMeals, getCookingSteps, getMacroTable, getHouseholdItems, getSnacksItems, getPlannerSnacks, getBaking, buildShoppingList, buildMacroSummary, calcMealMacrosPublic: calcMealMacros, getPersonForMealType, appendRows, importMealData };
 })();
