@@ -110,6 +110,7 @@
       <button class="rec-tab" data-tab="lunch"><span class="nav-icon">🥗</span><span class="nav-label">Lunch</span></button>
       <button class="rec-tab" data-tab="dinner"><span class="nav-icon">🍲</span><span class="nav-label">Dinner</span></button>
       <button class="rec-tab" data-tab="snacks"><span class="nav-icon">🍎</span><span class="nav-label">Snacks</span></button>
+      <button class="rec-tab" data-tab="baking"><span class="nav-icon">🧁</span><span class="nav-label">Baking</span></button>
     </div>
     <div class="actions-bar">
       <div style="display:flex;gap:6px">
@@ -128,8 +129,13 @@
 
   <!-- ══ PLANNER SECTION ═══════════════════════════════════ -->
   <div id="planner-section" style="display:none">
+    <div class="top-nav">
+      <button class="plan-subtab active" data-subtab="weekly"><span class="nav-icon">📅</span><span class="nav-label">Weekly</span></button>
+      <button class="plan-subtab" data-subtab="other"><span class="nav-icon">🧁</span><span class="nav-label">Other</span></button>
+    </div>
     <main class="app-main">
       <div id="planner-content"></div>
+      <div id="baking-content" style="display:none"></div>
     </main>
   </div>
 
@@ -173,6 +179,7 @@
 <script src="sheets.js"></script>
 <script src="household.js"></script>
 <script src="snacks.js"></script>
+<script src="baking.js"></script>
 <script src="planner.js"></script>
 <script src="app.js"></script>
 
