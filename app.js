@@ -6,7 +6,7 @@ const App = (() => {
 
   let state = {
     people: [],
-    meals: { breakfast: [], lunch: [], dinner: [], snacks: [] },
+    meals: { breakfast: [], lunch: [], dinner: [], snacks: [], baking: [] },
     cookingSteps: {},
     macroTable: {},
     shoppingList: [],
@@ -40,9 +40,21 @@ const App = (() => {
     importState = { data: null };
     document.querySelectorAll('.nav-tab').forEach(t => t.addEventListener('click', () => switchShopTab(t.dataset.tab)));
     document.querySelectorAll('.rec-tab').forEach(t => t.addEventListener('click', () => switchRecipesTab(t.dataset.tab)));
+    document.querySelectorAll('.plan-subtab').forEach(t => t.addEventListener('click', () => switchPlanSubtab(t.dataset.subtab)));
     PlannerSection.mount(document.getElementById('planner-content'));
+    Baking.mount(document.getElementById('baking-content'));
     Household.mount(document.getElementById('household-content'));
     Snacks.mount(document.getElementById('snacks-content'));
+  }
+
+  let planSubtab = 'weekly';
+  function switchPlanSubtab(subtab) {
+    planSubtab = subtab;
+    document.querySelectorAll('.plan-subtab').forEach(t => t.classList.toggle('active', t.dataset.subtab === subtab));
+    document.getElementById('planner-content').style.display = subtab === 'weekly' ? 'block' : 'none';
+    document.getElementById('baking-content').style.display  = subtab === 'other'  ? 'block' : 'none';
+    if (subtab === 'weekly') PlannerSection.refresh();
+    if (subtab === 'other')  Baking.render();
   }
 
   // ── Auth ─────────────────────────────────────────────────
@@ -65,7 +77,7 @@ const App = (() => {
   async function loadData() {
     setLoading(true); setError(null);
     try {
-      const [people, breakfast, lunch, dinner, cookingSteps, macroTable, householdItems, snacksItems, plannerSnacks] = await Promise.all([
+      const [people, breakfast, lunch, dinner, cookingSteps, macroTable, householdItems, snacksItems, plannerSnacks, baking] = await Promise.all([
         Sheets.getPeople(),
         Sheets.getMeals(CONFIG.TABS.BREAKFAST),
         Sheets.getMeals(CONFIG.TABS.LUNCH),
@@ -75,15 +87,17 @@ const App = (() => {
         Sheets.getHouseholdItems().catch(() => []),
         Sheets.getSnacksItems().catch(() => []),
         Sheets.getPlannerSnacks().catch(() => []),
+        Sheets.getBaking().catch(() => []),
       ]);
       state.people       = people;
-      state.meals        = { breakfast, lunch, dinner, snacks: plannerSnacks };
+      state.meals        = { breakfast, lunch, dinner, snacks: plannerSnacks, baking };
       state.cookingSteps = cookingSteps;
       state.macroTable   = macroTable;
       state.mealServings = {};
-      [...breakfast, ...lunch, ...dinner, ...plannerSnacks].forEach(m => { state.mealServings[m.name] = 1; });
+      [...breakfast, ...lunch, ...dinner, ...plannerSnacks, ...baking].forEach(m => { state.mealServings[m.name] = 1; });
       Household.init(householdItems);
       Snacks.init(snacksItems);
+      Baking.init(baking);
       // Deduplicate — People sheet has one row per meal type per person
       const seen = {};
       const uniquePeople = people.filter(p => {
@@ -95,6 +109,7 @@ const App = (() => {
       window._plannerPeople     = uniquePeople;
       window._plannerMeals      = { breakfast, lunch, dinner, snacks: plannerSnacks };
       window._plannerMacroTable = macroTable;
+      window._bakingRecipes     = baking;
       state.people = uniquePeople;
       Planner.init(uniquePeople);
       loadMealSelections();
@@ -104,6 +119,7 @@ const App = (() => {
       renderAll();
       // Now safe to start Firebase sync — people and meals are loaded
       Planner.initSync();
+      Baking.initSync();
       if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isReady()) {
         let gotChecked   = false;
         let gotCollapsed = false;
@@ -177,6 +193,16 @@ const App = (() => {
         include: selected[type].has(m.name),
       }));
     });
+
+    // Add selected baking recipes (Other / make anytime) as their own meal type
+    if (typeof Baking !== 'undefined' && Baking.getSelectedMeals) {
+      const bakingSel = Baking.getSelectedMeals(); // [{ meal, batch }]
+      result.baking = (Baking.getRecipes() || []).map(m => {
+        const sel = bakingSel.find(b => b.meal.name === m.name);
+        if (sel) state.mealServings[m.name] = sel.batch;
+        return { ...m, include: !!sel };
+      });
+    }
     return result;
   }
 
@@ -426,7 +452,7 @@ const App = (() => {
       const personTag = m.person !== 'Both' ? '<span class="person-tag ' + (m.person === 'Le Clue' ? 'tag-you' : 'tag-her') + '">' + m.person + '</span>' : '';
       return '<div class="meal-card ' + (hasSteps ? 'clickable' : '') + '" onclick="' + (hasSteps ? 'App.openMeal(\'' + safeName + '\')' : '') + '">' +
         '<div class="meal-card-main">' +
-          '<div class="meal-card-icon">' + (tab === 'breakfast' ? '🌅' : tab === 'lunch' ? '🥗' : tab === 'snacks' ? '🍎' : '🍲') + '</div>' +
+          '<div class="meal-card-icon">' + (tab === 'breakfast' ? '🌅' : tab === 'lunch' ? '🥗' : tab === 'snacks' ? '🍎' : tab === 'baking' ? '🧁' : '🍲') + '</div>' +
           '<div class="meal-card-info">' +
             '<div class="meal-card-name">' + m.name + ' ' + personTag + '</div>' +
             '<div class="meal-card-sub">' + (hasSteps ? state.cookingSteps[m.name].steps.length + ' steps · tap to cook' : 'No steps yet') + '</div>' +
@@ -492,7 +518,7 @@ const App = (() => {
     const wrap     = document.getElementById('cook-ingredients-wrap');
     if (!wrap) return;
     const mealName = state.activeMeal;
-    const mealInfo = [...state.meals.breakfast, ...state.meals.lunch, ...state.meals.dinner, ...(state.meals.snacks || [])].find(m => m.name === mealName);
+    const mealInfo = [...state.meals.breakfast, ...state.meals.lunch, ...state.meals.dinner, ...(state.meals.snacks || []), ...(state.meals.baking || [])].find(m => m.name === mealName);
     const servings = state.mealServings[mealName] || 1;
     const cookFor  = state.cookFor;
     const people   = state.people.filter(p => p.include);
