@@ -1,8 +1,8 @@
-const CACHE_NAME = 'meal-planner-v2';
+const CACHE_NAME = 'meal-planner-v3';
 const ASSETS = [
   '/meal-planner/','/meal-planner/index.html','/meal-planner/styles.css',
   '/meal-planner/config.js','/meal-planner/auth.js','/meal-planner/sheets.js',
-  '/meal-planner/firebase.js','/meal-planner/household.js','/meal-planner/snacks.js',
+  '/meal-planner/firebase.js','/meal-planner/household.js','/meal-planner/snacks.js','/meal-planner/baking.js',
   '/meal-planner/planner.js','/meal-planner/app.js','/meal-planner/favicon.ico',
   '/meal-planner/icon-192.png','/meal-planner/apple-touch-icon.png',
 ];
