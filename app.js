@@ -709,7 +709,7 @@ const App = (() => {
   }
 
   // ── AI Prompt Helper ──────────────────────────────────────
-  const AI_RECIPE_PROMPT = `I need a new recipe formatted as JSON for my meal planning app.
+  const AI_RECIPE_PROMPT = `I need a new recipe formatted as downloadable JSON for my meal planning app.
 
 CONTEXT ABOUT US:
 - Cooking for 2 people: Le Clue and Nadia
