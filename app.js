@@ -225,6 +225,7 @@ const App = (() => {
     if (section === 'recipes') renderRecipesSection();
     if (section === 'planner') PlannerSection.refresh();
     if (section === 'shopping') { rebuildList(); renderShoppingTab(); }
+    if (section === 'import') populateAiPrompt();
   }
 
   function switchShopTab(tab) {
@@ -707,6 +708,76 @@ const App = (() => {
     document.getElementById('import-file-input').value = '';
   }
 
+  // ── AI Prompt Helper ──────────────────────────────────────
+  const AI_RECIPE_PROMPT = `I need a new recipe formatted as JSON for my meal planning app.
+
+CONTEXT ABOUT US:
+- Cooking for 2 people: Le Clue and Nadia
+- Health goals: managing blood glucose (pre-diabetic), high LDL cholesterol, low HDL, high insulin, inflammation, vitamin D deficiency
+- Focus on: high protein, high fibre (>6g per 100g where possible), anti-inflammatory ingredients, lean proteins, wholegrains
+- Le Clue dislikes: zucchini. Fish allergy — only cooked salmon/trout, no other cooked fish (fresh fish OK)
+- Nadia dislikes: beef mince, olives
+- We use lite coconut milk (not full fat) due to cholesterol
+- South African ingredients/terms (we say "pepper" not "capsicum")
+
+DISH I WANT: [describe the dish here — cuisine, protein, meal type]
+
+MEAL TYPE: [Breakfast / Lunch / Dinner / Snacks / Baking]
+
+OUTPUT FORMAT — return ONLY valid JSON, no other text:
+{
+  "meal": "Dish Name",
+  "tabs": {
+    "[MEALTYPE]": [
+      ["TRUE", "Dish Name", "Category", "Both", "Ingredient", "Qty", "Unit", "Notes"]
+    ],
+    "Cooking": [
+      ["Dish Name", "[MEALTYPE]", "1", "Step title", "Step instruction", "TimerSeconds"]
+    ],
+    "Macros": [
+      ["Ingredient name", "kcal_per_100", "protein_per_100", "carbs_per_100", "fat_per_100", "fibre_per_100"]
+    ]
+  }
+}
+
+RULES:
+- Categories for ingredients: Proteins, Carbs, Veg, Dairy & Extras, Canned & Jarred, Stocks & Liquids, Pantry & Spices, Fats, Nuts & Dried Fruit, Baking
+- Person column is "Both" unless the dish differs per person
+- Qty for protein: use 120 (g) as the base — the app scales per person automatically
+- Timer is in SECONDS (0 if no timing needed)
+- Only add Macros rows for NEW ingredients not commonly already in my sheet
+- For baking, ingredients scale by batch not per person
+- Use lite coconut milk, lean proteins, wholegrain carbs`;
+
+  function populateAiPrompt() {
+    const el = document.getElementById('ai-prompt-text');
+    if (el) el.value = AI_RECIPE_PROMPT;
+  }
+
+  function copyAiPrompt() {
+    const el = document.getElementById('ai-prompt-text');
+    if (!el) return;
+    el.select();
+    el.setSelectionRange(0, 99999); // mobile support
+    try {
+      navigator.clipboard.writeText(el.value).then(() => showCopyFeedback()).catch(() => fallbackCopy(el));
+    } catch(e) {
+      fallbackCopy(el);
+    }
+  }
+
+  function fallbackCopy(el) {
+    try { document.execCommand('copy'); showCopyFeedback(); } catch(e) {}
+  }
+
+  function showCopyFeedback() {
+    const btn = document.getElementById('copy-prompt-btn');
+    if (!btn) return;
+    const original = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = original; }, 1800);
+  }
+
   // ── Overall shopping progress ────────────────────────────
   function updateOverallProgress() {
     // Meals
@@ -763,7 +834,7 @@ const App = (() => {
     if (state.activeSection === 'shopping') { renderList(); renderProgress(); }
   }
 
-  return { init, toggleItem, clearChecked: clearChecked, setRecipePersonFilter, openMeal, closeMeal, startTimer, pauseTimer, toggleStepComplete, changeCookServings, setCookFor, onPlannerChanged, handleImportFile, handleImportDrop, confirmImport, cancelImport, resetImport, updateOverallProgress, toggleCollapsed };
+  return { init, toggleItem, clearChecked: clearChecked, setRecipePersonFilter, openMeal, closeMeal, startTimer, pauseTimer, toggleStepComplete, changeCookServings, setCookFor, onPlannerChanged, handleImportFile, handleImportDrop, confirmImport, cancelImport, resetImport, updateOverallProgress, toggleCollapsed, copyAiPrompt };
 })();
 
 function onGisLoad() { App.init(); }
