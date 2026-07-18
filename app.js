@@ -167,8 +167,13 @@ const App = (() => {
     const selected = { breakfast: new Set(), lunch: new Set(), dinner: new Set(), snacks: new Set() };
     const batchMax = {}; // { mealName: max batch count across all days/people }
 
-    Object.entries(plan || {}).forEach(([dateKey, day]) => {
-      if (!day.enabled) return;
+    // Only pull from the CURRENT week's dates — old weeks stay in history
+    // but no longer feed the shopping list once a new week starts.
+    const currentWeekKeys = Planner.getCurrentWeekKeys();
+
+    currentWeekKeys.forEach(dateKey => {
+      const day = plan[dateKey];
+      if (!day || !day.enabled) return;
       Object.entries(day.meals || {}).forEach(([personName, personMeals]) => {
         ['breakfast','lunch','dinner','snacks'].forEach(slot => {
           const mealName = personMeals?.[slot];
