@@ -166,6 +166,17 @@
           <div id="import-result-content"></div>
           <button class="btn btn-ghost btn-sm" style="margin-top:12px;width:100%" onclick="App.resetImport()">Import another</button>
         </div>
+
+        <!-- ══ AI PROMPT HELPER ══════════════════════════════ -->
+        <div style="margin-top:28px;border-top:1px solid var(--border);padding-top:20px">
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--accent);margin-bottom:6px">🤖 Get New Recipes with AI</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:14px;line-height:1.6">Copy this prompt into Claude, ChatGPT, or any AI. Fill in the dish you want, and it'll return a ready-to-import JSON file.</div>
+
+          <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:14px">
+            <textarea id="ai-prompt-text" readonly style="width:100%;min-height:220px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-mid);font-family:'DM Sans',sans-serif;font-size:0.72rem;line-height:1.6;resize:vertical" onclick="this.select()"></textarea>
+            <button id="copy-prompt-btn" class="btn btn-primary" style="width:100%;margin-top:10px" onclick="App.copyAiPrompt()">📋 Copy Prompt</button>
+          </div>
+        </div>
       </div>
     </main>
   </div>
