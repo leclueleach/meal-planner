@@ -34,6 +34,10 @@ const Planner = (() => {
   }
   function isToday(date) { return toKey(date) === toKey(new Date()); }
 
+  function getCurrentWeekKeys() {
+    return getWeekDays().map(d => toKey(d));
+  }
+
   // ── Storage ───────────────────────────────────────────────
   function loadPlan() {
     try { const s = sessionStorage.getItem(STORAGE_KEY); if (s) plan = JSON.parse(s); } catch(e) { plan = {}; }
@@ -410,7 +414,7 @@ const Planner = (() => {
     clearMeal(dateKey, person, 'snacks');
   }
 
-  return { init, initSync, render, getPlan, getBatchCount, changeBatch, toggleDay, openPicker, openSnackPicker, closePicker, selectMeal, clearMeal, clearSnack };
+  return { init, initSync, render, getPlan, getBatchCount, changeBatch, toggleDay, openPicker, openSnackPicker, closePicker, selectMeal, clearMeal, clearSnack, getCurrentWeekKeys };
 })();
 
 // ── PlannerSection ────────────────────────────────────────
