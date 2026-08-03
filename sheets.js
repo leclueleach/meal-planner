@@ -106,7 +106,7 @@ const Sheets = (() => {
   // ── Macro reference table ────────────────────────────────
   // Columns: Ingredient, Calories/100g, Protein/100g, Carbs/100g, Fat/100g
   async function getMacroTable() {
-    const rows = await fetchRange(CONFIG.TABS.MACROS, 'A2:F200');
+    const rows = await fetchRange(CONFIG.TABS.MACROS, 'A2:F2000');
     const table = {};
     rows.forEach(r => {
       if (r.length < 5) return;
@@ -125,7 +125,7 @@ const Sheets = (() => {
 
   // ── Cooking Steps ────────────────────────────────────────
   async function getCookingSteps() {
-    const rows = await fetchRange(CONFIG.TABS.COOKING, 'A2:F200');
+    const rows = await fetchRange(CONFIG.TABS.COOKING, 'A2:F2000');
     const stepsMap = {};
     rows.forEach(r => {
       if (r.length < 5) return;
@@ -346,7 +346,7 @@ const Sheets = (() => {
   // ── Household Tab ───────────────────────────────────────
   // Columns: Include, Category, Item, Brand/Notes, Recurring
   async function getHouseholdItems() {
-    const rows = await fetchRange(CONFIG.TABS.HOUSEHOLD, 'A2:E200');
+    const rows = await fetchRange(CONFIG.TABS.HOUSEHOLD, 'A2:E2000');
     return rows
       .filter(r => r.length >= 3 && (r[0] || '').toUpperCase() === 'TRUE')
       .map((r, idx) => ({
@@ -363,7 +363,7 @@ const Sheets = (() => {
 
   // ── Snacks Shopping Tab ─────────────────────────────────
   async function getSnacksItems() {
-    const rows = await fetchRange(CONFIG.TABS.SNACKS, 'A2:E200');
+    const rows = await fetchRange(CONFIG.TABS.SNACKS, 'A2:E2000');
     return rows
       .filter(r => r.length >= 3 && (r[0] || '').toUpperCase() === 'TRUE')
       .map((r, idx) => ({
